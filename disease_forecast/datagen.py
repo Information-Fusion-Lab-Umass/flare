@@ -76,7 +76,7 @@ class Data:
         key = [x for x in vals[0].iter('visitIdentifier')][0].text
         return dict_visit[key]
 
-def get_data(path_meta, path_images, path_feat): 
+def get_data(path_meta, path_images, path_feat, min_visits=1): 
 
     data_feat = pd.read_csv(path_feat, dtype=object)
     
@@ -105,8 +105,9 @@ def get_data(path_meta, path_images, path_feat):
                 f_meta = os.path.join(path_meta, '_'.join(f_meta)+'xml')
                 p_paths.append((f_meta, f_img))
         # Get all data for the pid
-        if len(p_paths)!=0:
+        if len(p_paths)>=min_visits:
             data[pid] = Data(pid, p_paths, data_feat[data_feat.PTID==pid])
+
     return data 
 
 

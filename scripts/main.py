@@ -5,7 +5,7 @@ import yaml
 import argparse
 from shutil import copyfile
 
-from disease_forecast import datagen, utils#, engine, utils
+from disease_forecast import datagen, utils#, engine
 
 def main(config_file):
     
@@ -23,22 +23,7 @@ def main(config_file):
     copyfile(config_file, os.path.join(exp_dir, config['exp_id']+'.yaml'))
     
     # Load data and get image paths
-    data = datagen.get_data(**config['data_paths'])
-
-    # Train and validation data generators
-    #  paths_train, _, labels_train, paths_val, _, labels_val \
-    #          = datagen.get_paths(config['data_path'])
-    #  datagen_train = datagen.datagen_classify(paths_train, labels_train, **config['datagen'])
-    #  datagen_val = datagen.datagen_classify(paths_val, labels_val, **config['datagen'])
-    #
-    # Define Classification model
-    #  model = engine.Model(**config['model'])
-
-    # Train the model
-    #  model.train(datagen_train, datagen_val, exp_dir, **config['train'])
-
-    # Test the model
-    #  model.test(**config['test'])
+    data = datagen.get_data(**config['data'])
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
