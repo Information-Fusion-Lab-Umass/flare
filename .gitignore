@@ -4,3 +4,4 @@ slice_data/
 .ipynb_checkpoints/
 *.csv
 data_all/
+*.pyc

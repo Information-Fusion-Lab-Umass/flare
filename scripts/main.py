@@ -24,9 +24,10 @@ def main(config_file):
     
     # Load data and get image paths
     data = datagen.get_data(**config['data'])
+    return data
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str)
+    parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
-    main(args.config)
+    data = main(args.config)

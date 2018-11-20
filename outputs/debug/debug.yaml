@@ -3,7 +3,8 @@ exp_id: debug
 output_dir: &output ../outputs
 
 # Data
-data_paths:
+data:
     path_meta: '../data/metadata'
     path_images: '../data/images_small'
     path_feat: '../data/features.csv'
+    min_visits: 2
