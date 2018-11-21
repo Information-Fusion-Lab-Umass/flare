@@ -4,6 +4,13 @@ import os
 from glob import glob
 import xml.etree.ElementTree as ET 
 
+class Data_Batch: #BxT Data_Batch objects equals one batch
+    def __init__(self):
+        self.time_step = {}
+        self.img_path = {} #Path of image
+        self.cogtests = {} #Cognitive tests score
+        self.metrics = {} #1x3 output of multitask prediction, for time_step = T
+
 class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
@@ -13,6 +20,11 @@ class Data:
         self.cogtests = {}
         self.metrics = {}
         self.covariates = {}
+        
+        self.traj_1 = {}
+        self.traj_2 = {}
+        self.traj_3 = {}
+        self.traj_4 = {}
         
         flag_get_covariates = 0
         for fmeta, fimg in paths:
