@@ -33,7 +33,7 @@ if __name__=='__main__':
     data = main(args.config)
     
     #print(data['941_S_1194'].covariates)
-    ret = datagen.get_Batch([data['941_S_1194'],data['137_S_1414']],2,1,'image')
+    ret = datagen.get_Batch([data['941_S_1194']],2,1,'image')
     print(ret.shape)
-    #print(ret[1,1,1].cogtests)
+    print(ret[1,1,0].cogtests)
     

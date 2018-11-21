@@ -200,6 +200,7 @@ def get_Batch(patients,B,n_t,feat_flag):
    
     samples_idx = np.random.choice(len(selections),B,replace=False)
     samples = [selections[i] for i in samples_idx]
+    print(samples)
 
         
     def one_batch_one_patient(p,sample):
@@ -211,10 +212,10 @@ def get_Batch(patients,B,n_t,feat_flag):
         """
         for time_step in sample:
             key = dict_int2visit[time_step]
-            if key not in p.which_visits: #check if it's missing
+            if time_step not in p.which_visits: #check if it's missing
                 yield Data_Batch(time_step,'M','M','M',feat_flag)
-            else:
-                yield Data_Batch(time_step,
+
+            yield Data_Batch(time_step,
                              p.path_imgs[key],
                              p.cogtests[key],
                              p.covariates,feat_flag)
