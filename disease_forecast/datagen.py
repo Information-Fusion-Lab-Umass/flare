@@ -3,6 +3,7 @@ import pandas as pd
 import os
 from glob import glob
 import xml.etree.ElementTree as ET 
+from itertools import combinations as comb
 
 class Data_Batch: #BxT Data_Batch objects equals one batch
     def __init__(self):
@@ -15,6 +16,7 @@ class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
         self.num_visits = len(paths)
+        self.max_visits = 5
         self.which_visits = []
 
         self.path_imgs = {}
@@ -52,13 +54,25 @@ class Data:
                 self.covariates = self.get_covariates(feat_viscode)
                 flag_get_covariates = 1
                 
-            #Store visit values in sorted, integer form
-        print(temp_visits)
+        #Store visit values in sorted, integer form
         self.which_visits = self.get_which_visits(temp_visits) 
         
-            
+        #Store trajectory values
+        self.traj_1,
+        self.traj_2,
+        self.traj_3,self.traj_4 = self.get_trajectories()
+                    
+    
+    def get_trajectories(self):
+        #Returns (traj_1,traj_2,....), if some traj_i does not exist, the entry will be an empty list
+        trajectories = [None]*(self.max_visits - 1)
+        for i in range(self.max_visits-1):
+            if(i+1 < self.num_visits):
+                trajectories[i] = list(comb(self.which_visits,i+2))
+        return tuple(trajectories)
+        
     def get_which_visits(self, visits):
-        #convert list of visits into integers where bl -> 0, m06 ->1, ...
+        #Returns list of visits in integer form where bl -> 0, m06 ->1, ...
         which_visits = []
         dict_visit2int = {'bl':0,
               'm06':1,
@@ -147,9 +161,8 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
         if len(p_paths)>=min_visits:
             print(pid)
             data[pid] = Data(pid, p_paths, data_feat[data_feat.PTID==pid])
-    print(data['941_S_1194'].cogtests)
-    print(data['941_S_1194'].which_visits)
-
+    #print(data['941_S_1194'].cogtests)
+    #print(data['941_S_1194'].which_visits)
 
     return data 
 
