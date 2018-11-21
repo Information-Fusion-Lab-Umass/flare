@@ -4,13 +4,75 @@ import os
 from glob import glob
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
+from itertools import chain
 
 class Data_Batch: #BxT Data_Batch objects equals one batch
-    def __init__(self):
-        self.time_step = {}
-        self.img_path = {} #Path of image
-        self.cogtests = {} #Cognitive tests score
-        self.metrics = {} #1x3 output of multitask prediction, for time_step = T
+    def __init__(self,time_step,img_path,cogtests,covariates):
+        self.time_step = time_step
+        self.img_path = img_path #Path of image
+        self.cogtests = cogtests #Cognitive tests score
+        self.covariates = covariates
+        self.metrics = [] #1x3 output of multitask prediction, for time_step = T
+
+
+def get_Batch(patients,B,n_t):
+    """
+    JW:
+    Arguments:
+        'patients': is a list of 'Data objects, one for each patient. Size P x 1.
+        'B': an integer value which represents the batch size
+        'n_t': some integer between 1 and the number of trajectories. 
+               used to select which trajectory we want to sample from
+    
+    Returns:
+        'ret': a BxTxP matrix of Data_Batch objects 
+    """
+    P = len(patients) #number of patients
+    T = n_t+1 #number of visits in total trajectory. 
+    
+    ret = np.empty((B,T,P),dtype=object)
+    dict_int2visit = {0:'bl', #reverse dictionary
+               1:'m06',
+               2:'m12',
+               3:'m18',
+               4:'m24',
+               5:'m36',
+              -1:'none'}
+    
+    selections = []
+    for p in patients:
+        selections = list(chain(selections,p.trajectories[n_t-1])) #concatenate trajectories
+   
+    samples_idx = np.random.choice(len(selections),B,replace=False)
+    samples = [selections[i] for i in samples_idx]
+
+        
+    def one_batch_one_patient(p,sample):
+        """
+        JW
+        Description: subtask. produces Batch for one patient for each timestep in a sample.
+       
+        returns an iterable of Data_Batch objects, which has T entries when cast to a list
+        """
+        for time_step in sample:
+            key = dict_int2visit[time_step]
+            if key not in p.which_visits: #check if it's missing
+                yield Data_Batch(time_step,'M','M','M')
+            else:
+                yield Data_Batch(time_step,
+                             p.path_imgs[key],
+                             p.cogtests[key],
+                             p.covariates)
+                
+                
+    for outer, p in enumerate(patients):
+       mat = np.empty((B,T),dtype=object) #BxT matrix of Data_Batches
+       for inner,sample in enumerate(samples):
+            temp = []
+            temp = list(chain(temp,one_batch_one_patient(p,sample)))
+            mat[inner,:] = temp
+       ret[:,:,outer] = mat 
+    return ret
 
 class Data:
     def __init__(self, pid, paths, feat):
@@ -24,10 +86,7 @@ class Data:
         self.metrics = {}
         self.covariates = {}
         
-        self.traj_1 = []
-        self.traj_2 = []
-        self.traj_3 = []
-        self.traj_4 = []
+        self.trajectories = [] #list of [traj_1, traj_2,....]
         
         flag_get_covariates = 0
         
@@ -58,13 +117,15 @@ class Data:
         self.which_visits = self.get_which_visits(temp_visits) 
         
         #Store trajectory values
-        self.traj_1,
-        self.traj_2,
-        self.traj_3,self.traj_4 = self.get_trajectories()
+        self.trajectories = self.get_trajectories()
                     
     
     def get_trajectories(self):
-        #Returns (traj_1,traj_2,....), if some traj_i does not exist, the entry will be an empty list
+        """
+        JW: Returns (traj_1,traj_2,...., traj_{max_visits-1}).
+        If some traj_i does not exist, the entry for it will be an empty list.
+        Written to support an arbitrary amount of trajectories
+        """
         trajectories = [None]*(self.max_visits - 1)
         for i in range(self.max_visits-1):
             if(i+1 < self.num_visits):
@@ -72,7 +133,9 @@ class Data:
         return tuple(trajectories)
         
     def get_which_visits(self, visits):
-        #Returns list of visits in integer form where bl -> 0, m06 ->1, ...
+        """
+        JW: Returns list of visits in integer form where bl -> 0, m06 ->1, ...
+        """
         which_visits = []
         dict_visit2int = {'bl':0,
               'm06':1,
@@ -161,8 +224,6 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
         if len(p_paths)>=min_visits:
             print(pid)
             data[pid] = Data(pid, p_paths, data_feat[data_feat.PTID==pid])
-    #print(data['941_S_1194'].cogtests)
-    #print(data['941_S_1194'].which_visits)
 
     return data 
 
