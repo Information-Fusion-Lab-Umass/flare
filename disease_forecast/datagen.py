@@ -179,12 +179,12 @@ def get_Batch(patients,B,n_t,feat_flag):
                      features we want to train with.
     
     Returns:
-        'ret': a BxTxP matrix of Data_Batch objects 
+        'ret': a BxT matrix of Data_Batch objects 
     """
     P = len(patients) #number of patients
     T = n_t+1 #number of visits in total trajectory. 
     
-    ret = np.empty((B,T,P),dtype=object)
+    ret = np.empty((B,T),dtype=object)
     dict_int2visit = {0:'bl', #reverse dictionary
                1:'m06',
                2:'m12',
@@ -194,15 +194,32 @@ def get_Batch(patients,B,n_t,feat_flag):
               -1:'none'}
     
     selections = []
-
-    for p in patients:
-        selections = list(chain(selections,p.trajectories[n_t-1])) #concatenate trajectories
+    patient_idx = []
+    
+    for idx,p in enumerate(patients):
+        item = p.trajectories[n_t-1]
+        if item is not None:
+            traj_len = len(item)
+            selections.append(item)
+            patient_idx.append([idx]*traj_len)
+        #pids.append([p.pid]*traj_len)
+        
+    selections = list(chain.from_iterable(selections))
+    #print(selections)
+    patient_idx = list(chain.from_iterable(patient_idx))
+    #print(patient_idx)
+    num_trajs = len(selections)
+    if(B > num_trajs):
+        raise ValueError("Batch size: '{}' is larger than number of trajectories: '{}'".format(B,num_trajs))
    
     samples_idx = np.random.choice(len(selections),B,replace=False)
+    
     samples = [selections[i] for i in samples_idx]
-    print(samples)
-
-        
+    samples_p = [patients[patient_idx[i]] for i in samples_idx]
+    
+    #print(samples)
+    #print([patient_idx[i] for i in samples_idx])
+    
     def one_batch_one_patient(p,sample):
         """
         JW
@@ -212,21 +229,22 @@ def get_Batch(patients,B,n_t,feat_flag):
         """
         for time_step in sample:
             key = dict_int2visit[time_step]
-            if time_step not in p.which_visits: #check if it's missing
-                yield Data_Batch(time_step,'M','M','M',feat_flag)
-
             yield Data_Batch(time_step,
-                             p.path_imgs[key],
-                             p.cogtests[key],
-                             p.covariates,feat_flag)
-                
-                
-    for outer, p in enumerate(patients):
-       mat = np.empty((B,T),dtype=object) #BxT matrix of Data_Batches
-       for inner,sample in enumerate(samples):
-            temp = []
-            temp = list(chain(temp,one_batch_one_patient(p,sample)))
-            mat[inner,:] = temp
-       ret[:,:,outer] = mat 
+                            p.path_imgs[key],
+                            p.cogtests[key],
+                            p.covariates,feat_flag)
+    
+    for idx in range(B):
+        temp = list(one_batch_one_patient(samples_p[idx],samples[idx]))
+        ret[idx,:] = temp
     return ret
+#                
+#    for outer, p in enumerate(patients):
+#       mat = np.empty((B,T),dtype=object) #BxT matrix of Data_Batches
+#       for inner,sample in enumerate(samples):
+#            temp = []
+#            temp = list(chain(temp,one_batch_one_patient(p,sample)))
+#            mat[inner,:] = temp
+#       ret[:,:,outer] = mat 
+#    return ret
 
