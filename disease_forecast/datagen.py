@@ -15,22 +15,28 @@ class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
         self.num_visits = len(paths)
+        self.which_visits = []
 
         self.path_imgs = {}
         self.cogtests = {}
         self.metrics = {}
         self.covariates = {}
         
-        self.traj_1 = {}
-        self.traj_2 = {}
-        self.traj_3 = {}
-        self.traj_4 = {}
+        self.traj_1 = []
+        self.traj_2 = []
+        self.traj_3 = []
+        self.traj_4 = []
         
         flag_get_covariates = 0
+        
+        temp_visits = []
         for fmeta, fimg in paths:
             # Extract visit code from meta file         
             viscode = self.get_viscode(fmeta)
-
+            
+            #append viscode to list of visits
+            temp_visits.append(viscode)
+ 
             # Store image path with viscode as key
             self.path_imgs[viscode] = fimg
 
@@ -45,7 +51,28 @@ class Data:
             if flag_get_covariates==0:
                 self.covariates = self.get_covariates(feat_viscode)
                 flag_get_covariates = 1
-
+                
+            #Store visit values in sorted, integer form
+        print(temp_visits)
+        self.which_visits = self.get_which_visits(temp_visits) 
+        
+            
+    def get_which_visits(self, visits):
+        #convert list of visits into integers where bl -> 0, m06 ->1, ...
+        which_visits = []
+        dict_visit2int = {'bl':0,
+              'm06':1,
+              'm12':2,
+              'm18':3,
+              'm24':4,
+              'm36':5,
+              'none':-1}
+        for key in visits:
+            which_visits.append(dict_visit2int[key])
+            
+        which_visits = [x for x in which_visits if x != -1]
+        return sorted(which_visits)         
+    
     def get_cogtest(self, feat):
         return [
                 float(feat['ADAS11'].values[0]),
@@ -118,7 +145,11 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
                 p_paths.append((f_meta, f_img))
         # Get all data for the pid
         if len(p_paths)>=min_visits:
+            print(pid)
             data[pid] = Data(pid, p_paths, data_feat[data_feat.PTID==pid])
+    print(data['941_S_1194'].cogtests)
+    print(data['941_S_1194'].which_visits)
+
 
     return data 
 

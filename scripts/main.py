@@ -31,3 +31,4 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
     data = main(args.config)
+    
