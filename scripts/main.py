@@ -1,4 +1,6 @@
 import sys
+import unittest
+from unittest import TestCase as test
 sys.path.append('..')
 import os
 import yaml
@@ -31,12 +33,18 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
     data = main(args.config)
+
+   
+    #test
+    t = test()
+    for batch_size in range(1,4):
+        traj_type = 1   
+        ret = datagen.get_Batch(list(data.values()),batch_size,traj_type,'image') #usage
+        t.assertEqual(ret.shape,tuple((batch_size,traj_type+1))) #simple shape test
+        
+        traj_type = 2
+        if(batch_size > 1): #Testing the case where batch size B > number of trajectories
+            t.assertRaises(ValueError, datagen.get_Batch,list(data.values()),batch_size,traj_type,'image')
     
-    #print(data['941_S_1194'].covariates)
-    for item in list(data.values()):
-        #print(item.which_visits)
-        print(item.metrics)
-    ret = datagen.get_Batch(list(data.values()),1,2,'image')
-    print(ret.shape)
-    print(ret)
+
     

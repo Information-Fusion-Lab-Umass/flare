@@ -175,7 +175,7 @@ def get_Batch(patients,B,n_t,feat_flag):
         'patients': is a list of 'Data objects, one for each patient. Size P x 1.
         'B': an integer value which represents the batch size
         'n_t': some integer between 1 and the number of trajectory types traj_{n_t}. 
-               used to select which trajectory we want to sample from
+               used to select which trajectory type we want to sample from
         'feat_flag': a string that is set to 'tadpole' or 'image' depending what kind of image
                      features we want to train with.
     
@@ -239,13 +239,3 @@ def get_Batch(patients,B,n_t,feat_flag):
         temp = list(one_batch_one_patient(samples_p[idx],samples[idx]))
         ret[idx,:] = temp
     return ret
-#                
-#    for outer, p in enumerate(patients):
-#       mat = np.empty((B,T),dtype=object) #BxT matrix of Data_Batches
-#       for inner,sample in enumerate(samples):
-#            temp = []
-#            temp = list(chain(temp,one_batch_one_patient(p,sample)))
-#            mat[inner,:] = temp
-#       ret[:,:,outer] = mat 
-#    return ret
-
