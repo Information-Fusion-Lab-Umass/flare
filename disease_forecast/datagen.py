@@ -7,9 +7,10 @@ from itertools import combinations as comb
 from itertools import chain
 
 class Data_Batch: #BxT Data_Batch objects equals one batch
-    def __init__(self,time_step,feat_flag,img_path,cogtests,covariates,metrics):
+    def __init__(self,time_step,feat_flag,pid,img_path,cogtests,covariates,metrics):
         self.time_step = time_step
         self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
+        self.pid = pid #pid of patient that features are taken from
         self.img_path = img_path #Path of image
         self.cogtests = cogtests #Cognitive tests score
         self.covariates = covariates
@@ -230,6 +231,7 @@ def get_Batch(patients,B,n_t,feat_flag):
         for time_step in sample:
             key = dict_int2visit[time_step]
             yield Data_Batch(time_step,feat_flag,
+                            p.pid,
                             p.path_imgs[key],
                             p.cogtests[key],
                             p.covariates,
