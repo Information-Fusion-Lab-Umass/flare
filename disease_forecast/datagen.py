@@ -7,13 +7,13 @@ from itertools import combinations as comb
 from itertools import chain
 
 class Data_Batch: #BxT Data_Batch objects equals one batch
-    def __init__(self,time_step,img_path,cogtests,covariates):
+    def __init__(self,time_step,img_path,cogtests,covariates,feat_flag):
         self.time_step = time_step
         self.img_path = img_path #Path of image
         self.cogtests = cogtests #Cognitive tests score
         self.covariates = covariates
         self.metrics = [] #1x3 output of multitask prediction, for time_step = T
-
+        self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
 class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
@@ -167,7 +167,7 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
     return data 
 
 
-def get_Batch(patients,B,n_t):
+def get_Batch(patients,B,n_t,feat_flag):
     """
     JW:
     Arguments:
@@ -175,6 +175,8 @@ def get_Batch(patients,B,n_t):
         'B': an integer value which represents the batch size
         'n_t': some integer between 1 and the number of trajectories. 
                used to select which trajectory we want to sample from
+        'feat_flag': a string that is set to 'tadpole' or 'image' depending what kind of image
+                     features we want to train with.
     
     Returns:
         'ret': a BxTxP matrix of Data_Batch objects 
@@ -210,12 +212,12 @@ def get_Batch(patients,B,n_t):
         for time_step in sample:
             key = dict_int2visit[time_step]
             if key not in p.which_visits: #check if it's missing
-                yield Data_Batch(time_step,'M','M','M')
+                yield Data_Batch(time_step,'M','M','M',feat_flag)
             else:
                 yield Data_Batch(time_step,
                              p.path_imgs[key],
                              p.cogtests[key],
-                             p.covariates)
+                             p.covariates,feat_flag)
                 
                 
     for outer, p in enumerate(patients):
