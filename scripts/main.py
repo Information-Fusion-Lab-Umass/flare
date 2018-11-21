@@ -34,8 +34,8 @@ if __name__=='__main__':
     
     #print(data['941_S_1194'].covariates)
     for item in list(data.values()):
-        print(item.which_visits)
-        #print(item.trajectories[2])
+        #print(item.which_visits)
+        print(item.metrics)
     ret = datagen.get_Batch(list(data.values()),1,2,'image')
     print(ret.shape)
     print(ret)

@@ -7,13 +7,14 @@ from itertools import combinations as comb
 from itertools import chain
 
 class Data_Batch: #BxT Data_Batch objects equals one batch
-    def __init__(self,time_step,img_path,cogtests,covariates,feat_flag):
+    def __init__(self,time_step,feat_flag,img_path,cogtests,covariates,metrics):
         self.time_step = time_step
+        self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
         self.img_path = img_path #Path of image
         self.cogtests = cogtests #Cognitive tests score
         self.covariates = covariates
-        self.metrics = [] #1x3 output of multitask prediction, for time_step = T
-        self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
+        self.metrics = metrics #1x3 output of multitask prediction, for time_step = T
+
 class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
@@ -173,7 +174,7 @@ def get_Batch(patients,B,n_t,feat_flag):
     Arguments:
         'patients': is a list of 'Data objects, one for each patient. Size P x 1.
         'B': an integer value which represents the batch size
-        'n_t': some integer between 1 and the number of trajectories. 
+        'n_t': some integer between 1 and the number of trajectory types traj_{n_t}. 
                used to select which trajectory we want to sample from
         'feat_flag': a string that is set to 'tadpole' or 'image' depending what kind of image
                      features we want to train with.
@@ -181,8 +182,7 @@ def get_Batch(patients,B,n_t,feat_flag):
     Returns:
         'ret': a BxT matrix of Data_Batch objects 
     """
-    P = len(patients) #number of patients
-    T = n_t+1 #number of visits in total trajectory. 
+    T = n_t+1 #number of visits in traj_{n_t}. 
     
     ret = np.empty((B,T),dtype=object)
     dict_int2visit = {0:'bl', #reverse dictionary
@@ -198,7 +198,7 @@ def get_Batch(patients,B,n_t,feat_flag):
     
     for idx,p in enumerate(patients):
         item = p.trajectories[n_t-1]
-        if item is not None:
+        if item is not None: #check is trajectory exists. if it doesn't, don't concat it
             traj_len = len(item)
             selections.append(item)
             patient_idx.append([idx]*traj_len)
@@ -214,8 +214,8 @@ def get_Batch(patients,B,n_t,feat_flag):
    
     samples_idx = np.random.choice(len(selections),B,replace=False)
     
-    samples = [selections[i] for i in samples_idx]
-    samples_p = [patients[patient_idx[i]] for i in samples_idx]
+    samples = [selections[i] for i in samples_idx] #list of B trajectories chosen for batch.
+    samples_p = [patients[patient_idx[i]] for i in samples_idx] #list of B patient Data objects corresponding to ones chosen for Batch
     
     #print(samples)
     #print([patient_idx[i] for i in samples_idx])
@@ -229,10 +229,11 @@ def get_Batch(patients,B,n_t,feat_flag):
         """
         for time_step in sample:
             key = dict_int2visit[time_step]
-            yield Data_Batch(time_step,
+            yield Data_Batch(time_step,feat_flag,
                             p.path_imgs[key],
                             p.cogtests[key],
-                            p.covariates,feat_flag)
+                            p.covariates,
+                            p.metrics[key])
     
     for idx in range(B):
         temp = list(one_batch_one_patient(samples_p[idx],samples[idx]))
