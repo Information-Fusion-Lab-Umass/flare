@@ -14,66 +14,6 @@ class Data_Batch: #BxT Data_Batch objects equals one batch
         self.covariates = covariates
         self.metrics = [] #1x3 output of multitask prediction, for time_step = T
 
-
-def get_Batch(patients,B,n_t):
-    """
-    JW:
-    Arguments:
-        'patients': is a list of 'Data objects, one for each patient. Size P x 1.
-        'B': an integer value which represents the batch size
-        'n_t': some integer between 1 and the number of trajectories. 
-               used to select which trajectory we want to sample from
-    
-    Returns:
-        'ret': a BxTxP matrix of Data_Batch objects 
-    """
-    P = len(patients) #number of patients
-    T = n_t+1 #number of visits in total trajectory. 
-    
-    ret = np.empty((B,T,P),dtype=object)
-    dict_int2visit = {0:'bl', #reverse dictionary
-               1:'m06',
-               2:'m12',
-               3:'m18',
-               4:'m24',
-               5:'m36',
-              -1:'none'}
-    
-    selections = []
-    for p in patients:
-        selections = list(chain(selections,p.trajectories[n_t-1])) #concatenate trajectories
-   
-    samples_idx = np.random.choice(len(selections),B,replace=False)
-    samples = [selections[i] for i in samples_idx]
-
-        
-    def one_batch_one_patient(p,sample):
-        """
-        JW
-        Description: subtask. produces Batch for one patient for each timestep in a sample.
-       
-        returns an iterable of Data_Batch objects, which has T entries when cast to a list
-        """
-        for time_step in sample:
-            key = dict_int2visit[time_step]
-            if key not in p.which_visits: #check if it's missing
-                yield Data_Batch(time_step,'M','M','M')
-            else:
-                yield Data_Batch(time_step,
-                             p.path_imgs[key],
-                             p.cogtests[key],
-                             p.covariates)
-                
-                
-    for outer, p in enumerate(patients):
-       mat = np.empty((B,T),dtype=object) #BxT matrix of Data_Batches
-       for inner,sample in enumerate(samples):
-            temp = []
-            temp = list(chain(temp,one_batch_one_patient(p,sample)))
-            mat[inner,:] = temp
-       ret[:,:,outer] = mat 
-    return ret
-
 class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
@@ -222,10 +162,68 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
                 p_paths.append((f_meta, f_img))
         # Get all data for the pid
         if len(p_paths)>=min_visits:
-            print(pid)
             data[pid] = Data(pid, p_paths, data_feat[data_feat.PTID==pid])
 
     return data 
 
 
+def get_Batch(patients,B,n_t):
+    """
+    JW:
+    Arguments:
+        'patients': is a list of 'Data objects, one for each patient. Size P x 1.
+        'B': an integer value which represents the batch size
+        'n_t': some integer between 1 and the number of trajectories. 
+               used to select which trajectory we want to sample from
+    
+    Returns:
+        'ret': a BxTxP matrix of Data_Batch objects 
+    """
+    P = len(patients) #number of patients
+    T = n_t+1 #number of visits in total trajectory. 
+    
+    ret = np.empty((B,T,P),dtype=object)
+    dict_int2visit = {0:'bl', #reverse dictionary
+               1:'m06',
+               2:'m12',
+               3:'m18',
+               4:'m24',
+               5:'m36',
+              -1:'none'}
+    
+    selections = []
+
+    for p in patients:
+        selections = list(chain(selections,p.trajectories[n_t-1])) #concatenate trajectories
+   
+    samples_idx = np.random.choice(len(selections),B,replace=False)
+    samples = [selections[i] for i in samples_idx]
+
+        
+    def one_batch_one_patient(p,sample):
+        """
+        JW
+        Description: subtask. produces Batch for one patient for each timestep in a sample.
+       
+        returns an iterable of Data_Batch objects, which has T entries when cast to a list
+        """
+        for time_step in sample:
+            key = dict_int2visit[time_step]
+            if key not in p.which_visits: #check if it's missing
+                yield Data_Batch(time_step,'M','M','M')
+            else:
+                yield Data_Batch(time_step,
+                             p.path_imgs[key],
+                             p.cogtests[key],
+                             p.covariates)
+                
+                
+    for outer, p in enumerate(patients):
+       mat = np.empty((B,T),dtype=object) #BxT matrix of Data_Batches
+       for inner,sample in enumerate(samples):
+            temp = []
+            temp = list(chain(temp,one_batch_one_patient(p,sample)))
+            mat[inner,:] = temp
+       ret[:,:,outer] = mat 
+    return ret
 
