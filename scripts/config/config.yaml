@@ -4,7 +4,19 @@ output_dir: &output ../outputs
 
 # Data
 data:
-    path_meta: '../data/metadata'
-    path_images: '../data/images_small'
-    path_feat: '../data/features.csv'
+    path_meta: ../data/metadata
+    path_images: ../data/images_small
+    path_feat: ../data/features.csv
     min_visits: 2
+
+# Model 
+model:     
+    module_image:
+        name: Tadpole
+    module_temporal:            
+        name: lstm
+    module_forecast:
+        name: lut
+    fusion: latefuse
+        
+    

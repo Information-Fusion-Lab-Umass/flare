@@ -13,6 +13,7 @@ class Data:
         self.cogtests = {}
         self.metrics = {}
         self.covariates = {}
+        self.img_features = {}
         
         flag_get_covariates = 0
         for fmeta, fimg in paths:
@@ -25,6 +26,9 @@ class Data:
             # Store cognitive test data with viscode as key
             feat_viscode = feat.loc[(feat.PTID==pid) & (feat.VISCODE==viscode)]
             self.cogtests[viscode] = self.get_cogtest(feat_viscode)
+
+            # Store image features
+            self.img_features[viscode] = self.get_img_features(feat_viscode)
 
             # Store evaluation metrics with viscode as key
             self.metrics[viscode] = self.get_metrics(feat_viscode)
@@ -41,9 +45,23 @@ class Data:
                 float(feat['MMSE'].values[0]),
                 float(feat['RAVLT_immediate'].values[0])
                 ]
+    
+    # Extract image features. len = 692. 
+    # Several values are missing (' '). Replaced with 0
+    # TODO: normalize features
+    def get_img_features(self, feat):
+        feat_names = feat.columns.values
+        img_feat = []
+        for name in feat.columns.values:
+            if('UCSFFSX' in name or 'UCSFFSL' in name):
+                if(name.startswith('ST') and 'STATUS' not in name):
+                    if feat[name].values[0] != ' ':
+                        img_feat.append(float(feat[name].values[0]))
+                    else:
+                        img_feat.append(0.0)
+        return img_feat
 
     def get_metrics(self, feat):
-        #  dict_dx =
         return [
                 feat['DX'].values[0],
                 float(feat['ADAS13'].values[0]),
