@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from itertools import combinations as comb
 from itertools import chain
 
-class Data_Batch: #BxT Data_Batch objects equals one batch
+class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
     def __init__(self,time_step,feat_flag,pid,img_path,cogtests,covariates,metrics):
         self.time_step = time_step
         self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
@@ -173,11 +173,11 @@ def get_Batch(patients,B,n_t,feat_flag):
     """
     JW:
     Arguments:
-        'patients': is a list of 'Data objects, one for each patient. Size P x 1.
-        'B': an integer value which represents the batch size
-        'n_t': some integer between 1 and the number of trajectory types traj_{n_t}. 
+        'patients': List of 'Data objects, one for each patient. Size P x 1.
+        'B': Integer value which represents the batch size
+        'n_t': Integer between 1 and the number of trajectory types traj_{n_t}. 
                used to select which trajectory type we want to sample from
-        'feat_flag': a string that is set to 'tadpole' or 'image' depending what kind of image
+        'feat_flag': String that is set to 'tadpole' or 'image' depending what kind of image
                      features we want to train with.
     
     Returns:
@@ -199,18 +199,18 @@ def get_Batch(patients,B,n_t,feat_flag):
     
     for idx,p in enumerate(patients):
         item = p.trajectories[n_t-1]
-        if item is not None: #check is trajectory exists. if it doesn't, don't concat it
+        #Check if trajectory exists. If it doesn't, don't concat it.
+        if item is not None: 
             traj_len = len(item)
             selections.append(item)
             patient_idx.append([idx]*traj_len)
-        #pids.append([p.pid]*traj_len)
         
     selections = list(chain.from_iterable(selections))
     #print(selections)
     patient_idx = list(chain.from_iterable(patient_idx))
     #print(patient_idx)
     num_trajs = len(selections)
-    if(B > num_trajs):
+    if(B > num_trajs): 
         raise ValueError("Batch size: '{}' is larger than number of trajectories: '{}'".format(B,num_trajs))
    
     samples_idx = np.random.choice(len(selections),B,replace=False)
@@ -223,10 +223,16 @@ def get_Batch(patients,B,n_t,feat_flag):
     
     def one_batch_one_patient(p,sample):
         """
-        JW
-        Description: subtask. produces Batch for one patient for each timestep in a sample.
+        JW:
+        arguments:
+            'p':  Data object corresponding to a patient.
+            'sample': List of integers. It is the trajectory we want to 
+                     create the batch entry for.
+                 
+        Description: Produces batch entry for given patient for each timestep in a sample.
        
-        returns an iterable of Data_Batch objects, which has T entries when cast to a list
+        returns:
+            'ret': a generator of Data_Batch objects which has T entries.
         """
         for time_step in sample:
             key = dict_int2visit[time_step]

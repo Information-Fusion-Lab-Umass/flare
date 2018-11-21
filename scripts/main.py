@@ -35,7 +35,7 @@ if __name__=='__main__':
     data = main(args.config)
 
    
-    #test
+    #tests
     t = test()
     for batch_size in range(1,4):
         traj_type = 1   
@@ -47,7 +47,6 @@ if __name__=='__main__':
             t.assertRaises(ValueError, datagen.get_Batch,list(data.values()),batch_size,traj_type,'image')
         
     ret = datagen.get_Batch(list(data.values()),3,1,'image')
-    
     for row in ret:
         check = row[0].pid
         for item in row:
