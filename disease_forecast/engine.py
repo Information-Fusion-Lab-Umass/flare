@@ -5,10 +5,10 @@ from scipy.misc import imsave
 from tqdm import tqdm
 #  import matplotlib.pyplot as plt
 
-import tensorflow as tf
-from keras.callbacks import ModelCheckpoint, CSVLogger
-from keras.losses import categorical_crossentropy
-import keras.backend as K
+#  import tensorflow as tf
+#  from keras.callbacks import ModelCheckpoint, CSVLogger
+#  from keras.losses import categorical_crossentropy
+#  import keras.backend as K
 
 from disease_forecast import models, utils, datagen
 
@@ -39,7 +39,8 @@ class Model:
        # For each epoch,
        for epoch in num_epochs:
 
-           x_train_batch = next(datagen_train)
+           #  x_train_batch = next(datagen_train)
+           x_train_batch = datagen.get_Batch(patients, B, n_t, feat_flag) 
 
            # Get image features
            # x_img_feat: (B, T, F_i)

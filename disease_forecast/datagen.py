@@ -7,7 +7,7 @@ from itertools import combinations as comb
 from itertools import chain
 
 class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
-    def __init__(self,time_step,feat_flag,pid,img_path,cogtests,covariates,metrics):
+    def __init__(self,time_step,feat_flag,pid,img_path,cogtests,covariates,metrics,img_features):
         self.time_step = time_step
         self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
         self.pid = pid #pid of patient that features are taken from
@@ -15,6 +15,7 @@ class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
         self.cogtests = cogtests #Cognitive tests score
         self.covariates = covariates
         self.metrics = metrics #1x3 output of multitask prediction, for time_step = T
+        self.img_features = img_features
 
 class Data:
     def __init__(self, pid, paths, feat):
@@ -186,6 +187,19 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
 
     return data 
 
+def get_datagen(data, data_split, batch_size, feat_flag):
+    # Get Train and Test PIDs
+    data_items = list(data.values())
+    data_train = data_items[:int(data_split*len(data_items))]
+    data_val = data_items[len(data_train):]
+    print(len(data_train), len(data_val))
+
+    # Get data Generator
+    n_t = 1 # np.random.randint(4)
+    datagen_train = get_Batch(data_train, batch_size, n_t, feat_flag)
+    datagen_val = get_Batch(data_val, batch_size, n_t, feat_flag)
+
+    return datagen_train, datagen_val
 
 def get_Batch(patients,B,n_t,feat_flag):
     """
@@ -252,16 +266,19 @@ def get_Batch(patients,B,n_t,feat_flag):
         returns:
             'ret': a generator of Data_Batch objects which has T entries.
         """
+        batch = []
         for time_step in sample:
             key = dict_int2visit[time_step]
-            yield Data_Batch(time_step,feat_flag,
+            batch.append(Data_Batch(time_step,feat_flag,
                             p.pid,
                             p.path_imgs[key],
                             p.cogtests[key],
                             p.covariates,
-                            p.metrics[key])
+                            p.metrics[key],
+                            p.img_features[key]))
+        return batch
     
     for idx in range(B):
-        temp = list(one_batch_one_patient(samples_p[idx],samples[idx]))
+        temp = one_batch_one_patient(samples_p[idx],samples[idx])
         ret[idx,:] = temp
-    return ret
+    yield ret

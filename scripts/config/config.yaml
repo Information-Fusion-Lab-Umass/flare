@@ -9,6 +9,12 @@ data:
     path_feat: ../data/features.csv
     min_visits: 2
 
+datagen:
+    data_split: 0.8
+    batch_size: 1
+    feat_flag: tadpole 
+
+
 # Model 
 model:     
     module_image:
