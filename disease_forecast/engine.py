@@ -32,38 +32,49 @@ class Model:
         model_forecast_name = module_forecast.pop('name')
         self.model_forecast = model_dict_image[model_forecast_name](**module_forecast)
 
-        # Model pipeline
-        x_img = 
- 
+        self.fusion = fusion
+
     def train(self, datagen_train, datagen_val):
 
        # For each epoch,
-       x_train_batch = next(datagen_train)
+       for epoch in num_epochs:
 
-       # Get image features
-       x_img_data, T = datagen.get_img_batch(x_train_batch) 
-       x_img_feat = []
-       for t in range(T):
-           x_img_feat.append(self.model_image.forward(x_img_data))
-       # x_img_feat: (B, T, F_i)
-       x_img_feat = np.array(x_img_feat)
+           x_train_batch = next(datagen_train)
 
-       # Get longitudinal and covariate features
-       x_long_data,_ = datagen.get_long_batch(x_train_batch)
-       x_cov_data,_ = datagen.get_covariate_batch(x_train_batch)
-       x_img_feat = []
-       for t in range(T):
-           x_img_feat.append(self.model_image.forward(x_img_data))
-       # x_img_feat: (B, T, F_i)
-       x_img_feat = np.array(x_img_feat)
+           # Get image features
+           # x_img_feat: (B, T, F_i)
+           x_img_data, T = datagen.get_img_batch(x_train_batch) 
+           x_img_feat = []
+           for t in range(T):
+               x_img_feat.append(self.model_image.forward(x_img_data))
+           x_img_feat = np.array(x_img_feat)
 
-       # Get longitudinal and covariate features
-       x_long_data, _ = datagen.get_long_batch(x_train_batch)
-       x_img_feat = []
-       for t in range(T):
-           x_img_feat.append(self.model_image.forward(x_img_data))
-       # x_img_feat: (B, T, F_i)
-       x_img_feat = np.array(x_img_feat)       
+           # Get longitudinal features
+           # x_long_feat: (B, T, F_l)
+           x_long_data,_ = datagen.get_long_batch(x_train_batch)
+           x_cov_data,_ = datagen.get_covariate_batch(x_train_batch)
+           x_long_feat = []
+           for t in range(T):
+               x_long_feat.append(self.model_long.forward(x_long_data))
+           x_long_feat = np.array(x_long_feat)
+
+           # Get covariate features
+           # x_cov_feat: (B, T, F_c)
+           x_cov_data, _ = datagen.get_long_batch(x_train_batch)
+           x_cov_feat = []
+           for t in range(T):
+               x_cov_feat.append(self.model_covariate.forward(x_cov_data))
+           x_cov_feat = np.array(x_cov_feat) 
+
+           # Fuse the features
+           if self.fusion=='latefuse':
+               x_feat = np.concatenate((x_img_feat, x_long_feat, x_cov_feat), axis=-1)
+           #  elif self.fusion=='shortfuse':
+           #      x_feat = models.shortfuse(x_img_feat, x_long_feat, x_cov_feat)
+
+           # Temporal Module
+
+
 
 
     #  def train(self, datagen_train, datagen_val, output_dir, ckpt_period, fit_params)
