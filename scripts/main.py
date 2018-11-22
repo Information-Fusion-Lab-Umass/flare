@@ -1,4 +1,6 @@
 import sys
+import unittest
+from unittest import TestCase as test
 sys.path.append('..')
 import os
 import yaml
@@ -44,3 +46,24 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
     data = main(args.config)
+
+   
+    #tests
+    t = test()
+    for batch_size in range(1,4):
+        traj_type = 1   
+        ret = datagen.get_Batch(list(data.values()),batch_size,traj_type,'image')
+        t.assertEqual(ret.shape,tuple((batch_size,traj_type+1))) #simple shape test
+        
+        traj_type = 2
+        if(batch_size > 1): #Testing the case where batch size B > number of trajectories
+            t.assertRaises(ValueError, datagen.get_Batch,list(data.values()),batch_size,traj_type,'image')
+        
+    ret = datagen.get_Batch(list(data.values()),3,1,'image')
+    for row in ret:
+        check = row[0].pid
+        for item in row:
+            t.assertEqual(check,item.pid) #make sure pid is the same throughout each timestep in a trajectory
+        
+
+    

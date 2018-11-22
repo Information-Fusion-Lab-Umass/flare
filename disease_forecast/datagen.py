@@ -3,11 +3,25 @@ import pandas as pd
 import os
 from glob import glob
 import xml.etree.ElementTree as ET 
+from itertools import combinations as comb
+from itertools import chain
+
+class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
+    def __init__(self,time_step,feat_flag,pid,img_path,cogtests,covariates,metrics):
+        self.time_step = time_step
+        self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
+        self.pid = pid #pid of patient that features are taken from
+        self.img_path = img_path #Path of image
+        self.cogtests = cogtests #Cognitive tests score
+        self.covariates = covariates
+        self.metrics = metrics #1x3 output of multitask prediction, for time_step = T
 
 class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
         self.num_visits = len(paths)
+        self.max_visits = 5
+        self.which_visits = []
 
         self.path_imgs = {}
         self.cogtests = {}
@@ -15,11 +29,18 @@ class Data:
         self.covariates = {}
         self.img_features = {}
         
+        self.trajectories = [] #list of [traj_1, traj_2,....]
+        
         flag_get_covariates = 0
+        
+        temp_visits = []
         for fmeta, fimg in paths:
             # Extract visit code from meta file         
             viscode = self.get_viscode(fmeta)
-
+            
+            #append viscode to list of visits
+            temp_visits.append(viscode)
+ 
             # Store image path with viscode as key
             self.path_imgs[viscode] = fimg
 
@@ -37,7 +58,44 @@ class Data:
             if flag_get_covariates==0:
                 self.covariates = self.get_covariates(feat_viscode)
                 flag_get_covariates = 1
-
+                
+        #Store visit values in sorted, integer form
+        self.which_visits = self.get_which_visits(temp_visits) 
+        
+        #Store trajectory values
+        self.trajectories = self.get_trajectories()
+                    
+    
+    def get_trajectories(self):
+        """
+        JW: Returns (traj_1,traj_2,...., traj_{max_visits-1}).
+        If some traj_i does not exist, the entry for it will be an empty list.
+        Written to support an arbitrary amount of trajectories
+        """
+        trajectories = [None]*(self.max_visits - 1)
+        for i in range(self.max_visits-1):
+            if(i+1 < self.num_visits):
+                trajectories[i] = list(comb(self.which_visits,i+2))
+        return tuple(trajectories)
+        
+    def get_which_visits(self, visits):
+        """
+        JW: Returns list of visits in integer form where bl -> 0, m06 ->1, ...
+        """
+        which_visits = []
+        dict_visit2int = {'bl':0,
+              'm06':1,
+              'm12':2,
+              'm18':3,
+              'm24':4,
+              'm36':5,
+              'none':-1}
+        for key in visits:
+            which_visits.append(dict_visit2int[key])
+            
+        which_visits = [x for x in which_visits if x != -1]
+        return sorted(which_visits)         
+    
     def get_cogtest(self, feat):
         return [
                 float(feat['ADAS11'].values[0]),
@@ -129,4 +187,81 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
     return data 
 
 
-
+def get_Batch(patients,B,n_t,feat_flag):
+    """
+    JW:
+    Arguments:
+        'patients': List of 'Data objects, one for each patient. Size P x 1.
+        'B': Integer value which represents the batch size
+        'n_t': Integer between 1 and the number of trajectory types traj_{n_t}. 
+               used to select which trajectory type we want to sample from
+        'feat_flag': String that is set to 'tadpole' or 'image' depending what kind of image
+                     features we want to train with.
+    
+    Returns:
+        'ret': a BxT matrix of Data_Batch objects 
+    """
+    T = n_t+1 #number of visits in traj_{n_t}. 
+    
+    ret = np.empty((B,T),dtype=object)
+    dict_int2visit = {0:'bl', #reverse dictionary
+               1:'m06',
+               2:'m12',
+               3:'m18',
+               4:'m24',
+               5:'m36',
+              -1:'none'}
+    
+    selections = []
+    patient_idx = []
+    
+    for idx,p in enumerate(patients):
+        item = p.trajectories[n_t-1]
+        #Check if trajectory exists. If it doesn't, don't concat it.
+        if item is not None: 
+            traj_len = len(item)
+            selections.append(item)
+            patient_idx.append([idx]*traj_len)
+        
+    selections = list(chain.from_iterable(selections))
+    #print(selections)
+    patient_idx = list(chain.from_iterable(patient_idx))
+    #print(patient_idx)
+    num_trajs = len(selections)
+    if(B > num_trajs): 
+        raise ValueError("Batch size: '{}' is larger than number of trajectories: '{}'".format(B,num_trajs))
+   
+    samples_idx = np.random.choice(len(selections),B,replace=False)
+    
+    samples = [selections[i] for i in samples_idx] #list of B trajectories chosen for batch.
+    samples_p = [patients[patient_idx[i]] for i in samples_idx] #list of B patient Data objects corresponding to ones chosen for Batch
+    
+    #print(samples)
+    #print([patient_idx[i] for i in samples_idx])
+    
+    def one_batch_one_patient(p,sample):
+        """
+        JW:
+        arguments:
+            'p':  Data object corresponding to a patient.
+            'sample': List of integers. It is the trajectory we want to 
+                     create the batch entry for.
+                 
+        Description: Produces batch entry for given patient for each timestep in a sample.
+       
+        returns:
+            'ret': a generator of Data_Batch objects which has T entries.
+        """
+        for time_step in sample:
+            key = dict_int2visit[time_step]
+            yield Data_Batch(time_step,feat_flag,
+                            p.pid,
+                            p.path_imgs[key],
+                            p.cogtests[key],
+                            p.covariates,
+                            p.metrics[key])
+    
+    for idx in range(B):
+        temp = list(one_batch_one_patient(samples_p[idx],samples[idx]))
+        ret[idx,:] = temp
+    return ret
