@@ -2,14 +2,16 @@ import numpy as np
 import pandas as pd
 import os
 from glob import glob
+import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
 
 class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
-    def __init__(self,time_step,feat_flag,pid,img_path,cogtests,covariates,metrics,img_features):
+    def __init__(self, time_step, feat_flag, pid, img_path, cogtests, 
+            covariates, metrics, img_features):
         self.time_step = time_step
-        self.image_type = feat_flag #is set to 'tadpole' or 'image' depending on which image features we train on
+        self.image_type = feat_flag #is set to 'tadpole' or 'cnn3d' depending on which image features we train on
         self.pid = pid #pid of patient that features are taken from
         self.img_path = img_path #Path of image
         self.cogtests = cogtests #Cognitive tests score
@@ -195,7 +197,7 @@ def get_datagen(data, data_split, batch_size, feat_flag):
     print(len(data_train), len(data_val))
 
     # Get data Generator
-    n_t = 1 # np.random.randint(4)
+    n_t = 2 # np.random.randint(4)
     datagen_train = get_Batch(data_train, batch_size, n_t, feat_flag)
     datagen_val = get_Batch(data_val, batch_size, n_t, feat_flag)
 
@@ -282,3 +284,54 @@ def get_Batch(patients,B,n_t,feat_flag):
         temp = one_batch_one_patient(samples_p[idx],samples[idx])
         ret[idx,:] = temp
     yield ret
+
+# Given a (BxT) array of DataBatch objects, return the image paths/features
+# as a (BxT) paths (CNN) or (BxTxF) features (tadpole)
+def get_img_batch(x):
+    (B, T) = x.shape
+    img_type = x[0, 0].image_type
+    if img_type =='tadpole':
+        num_feat = len(x[0, 0].img_features)
+        feat = np.zeros((B, T-1, num_feat))
+        for b in range(B):
+            for t in range(T-1):
+                feat[b, t, :] = x[b, t].img_features
+    elif img_type == 'cnn3d':
+        feat = np.zeros((B, T-1))
+        for b in range(B):
+            for t in range(T-1):                
+                feat[b, t] = x[b, t].img_path
+    return feat, T
+
+# Given a (BxT) array of DataBatch objects, return the cognitive tests
+# as (BxTxF) features
+def get_long_batch(x):
+    (B, T) = x.shape
+    num_feat = len(x[0, 0].cogtests)
+    feat = np.zeros((B, T-1, num_feat))
+    for b in range(B):
+        for t in range(T-1):
+            feat[b, t, :] = x[b, t].cogtests
+    return feat
+
+# Given a (BxT) array of DataBatch objects, return the covariates
+# as (BxTxF) features
+def get_cov_batch(x):
+    (B, T) = x.shape
+    num_feat = len(x[0, 0].covariates)
+    feat = np.zeros((B, T-1, num_feat))
+    for b in range(B):
+        for t in range(T-1):
+            feat[b, t, :] = x[b, t].covariates
+    return feat
+
+
+
+
+
+
+
+
+
+
+

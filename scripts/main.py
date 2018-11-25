@@ -31,10 +31,10 @@ def main(config_file):
     datagen_train, datagen_val = datagen.get_datagen(data, **config['datagen'])
 
     # Define Classification model
-    #  model = engine.Model(**config['model'])
+    model = engine.Model(**config['model'])
 
     # Train the model
-    #  model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
     #  model.test(**config['test'])
@@ -46,7 +46,7 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
     data, dgt, dgv = main(args.config)
-    a = next(dgt)
+    #  a = next(dgt)
     #
     #  #tests
     #  t = test()

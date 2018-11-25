@@ -3,69 +3,73 @@ import os
 import pandas as pd
 from scipy.misc import imsave
 from tqdm import tqdm
-#  import matplotlib.pyplot as plt
-
-#  import tensorflow as tf
-#  from keras.callbacks import ModelCheckpoint, CSVLogger
-#  from keras.losses import categorical_crossentropy
-#  import keras.backend as K
-
+import torch
+import ipdb
 from disease_forecast import models, utils, datagen
 
 class Model:
     def __init__(self, module_image, module_temporal, module_forecast, fusion):
         # Model Architectures: Image
-        model_dict_image = {
-                'Tadpole': models.Tadpole,
-                'CNN3D_sononet': models.Sononet3d
+        model_dict = {
+                'tadpole': models.Tadpole,
+                'long': models.Longitudinal,
+                'cov': models.Covariate,
+                'lstm': models.LSTM
+                #  'cnn3d': models.Sononet3d
                 }
         
         # Load model: image architecture
         model_image_name = module_image.pop('name')
         self.model_image = model_dict[model_image_name](**module_image)
         
+        # Load model: longitudinal architecture
+        self.model_long = model_dict['long']()
+
+        # Load model: covariate architecture
+        self.model_cov = model_dict['cov']()
+
         # Load model: temporal architecture
         model_temporal_name = module_temporal.pop('name')
         self.model_temporal = model_dict[model_temporal_name](**module_temporal)
-        
-        # Load model: forecast architecture
-        model_forecast_name = module_forecast.pop('name')
-        self.model_forecast = model_dict_image[model_forecast_name](**module_forecast)
+        #
+        #  # Load model: forecast architecture
+        #  model_forecast_name = module_forecast.pop('name')
+        #  self.model_forecast = model_dict[model_forecast_name](**module_forecast)
 
         self.fusion = fusion
 
-    def train(self, datagen_train, datagen_val):
+    def train(self, datagen_train, datagen_val, exp_dir, 
+            num_epochs):
 
        # For each epoch,
-       for epoch in num_epochs:
+       for epoch in range(num_epochs):
 
-           #  x_train_batch = next(datagen_train)
-           x_train_batch = datagen.get_Batch(patients, B, n_t, feat_flag) 
+           x_train_batch = next(datagen_train)
 
            # Get image features
            # x_img_feat: (B, T, F_i)
            x_img_data, T = datagen.get_img_batch(x_train_batch) 
            x_img_feat = []
-           for t in range(T):
-               x_img_feat.append(self.model_image.forward(x_img_data))
+           for t in range(T-1):
+               x_img_feat.append(self.model_image.forward(x_img_data[:,t]))
            x_img_feat = np.array(x_img_feat)
+           assert x_img_data.all() == x_img_feat.all()
 
            # Get longitudinal features
            # x_long_feat: (B, T, F_l)
-           x_long_data,_ = datagen.get_long_batch(x_train_batch)
-           x_cov_data,_ = datagen.get_covariate_batch(x_train_batch)
+           x_long_data = datagen.get_long_batch(x_train_batch)
            x_long_feat = []
-           for t in range(T):
-               x_long_feat.append(self.model_long.forward(x_long_data))
+           for t in range(T-1):
+               x_long_feat.append(self.model_long.forward(x_long_data[:, t], output='numpy'))
            x_long_feat = np.array(x_long_feat)
 
            # Get covariate features
            # x_cov_feat: (B, T, F_c)
-           x_cov_data, _ = datagen.get_long_batch(x_train_batch)
+           x_cov_data = datagen.get_cov_batch(x_train_batch)
            x_cov_feat = []
-           for t in range(T):
-               x_cov_feat.append(self.model_covariate.forward(x_cov_data))
-           x_cov_feat = np.array(x_cov_feat) 
+           for t in range(T-1):
+               x_cov_feat.append(self.model_cov.forward(x_cov_data[:, t], output='numpy'))
+           x_cov_feat = np.array(x_cov_feat)
 
            # Fuse the features
            if self.fusion=='latefuse':
@@ -74,6 +78,15 @@ class Model:
            #      x_feat = models.shortfuse(x_img_feat, x_long_feat, x_cov_feat)
 
            # Temporal Module
+           if T==2:
+               x_temp = x_feat
+           else:
+               x_temp = self.model_temporal.forward(x_feat, output='numpy')
+          
+           # Forecasting Module
+
+           ipdb.set_trace()
+
 
 
 

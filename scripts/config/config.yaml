@@ -12,17 +12,17 @@ data:
 datagen:
     data_split: 0.8
     batch_size: 1
-    feat_flag: tadpole 
-
+    feat_flag: &imgType tadpole 
 
 # Model 
 model:     
     module_image:
-        name: Tadpole
+        name: *imgType
     module_temporal:            
         name: lstm
     module_forecast:
         name: lut
     fusion: latefuse
         
-    
+train:
+    num_epochs: 1        
