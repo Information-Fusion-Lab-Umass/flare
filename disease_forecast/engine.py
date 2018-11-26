@@ -2,9 +2,9 @@ import numpy as np
 import os
 import pandas as pd
 from scipy.misc import imsave
-from tqdm import tqdm
+#from tqdm import tqdm
 import torch
-import ipdb
+#import ipdb
 from disease_forecast import models, utils, datagen
 
 class Model:

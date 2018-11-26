@@ -6,8 +6,8 @@ import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
-import ipdb
-from tqdm import tqdm
+#import ipdb
+#from tqdm import tqdm
 
 class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
     def __init__(self, time_step, feat_flag, pid, img_path, cogtests, 
@@ -70,8 +70,8 @@ class Data:
         #Store visit values in sorted, integer form
         self.which_visits = self.get_which_visits(temp_visits) 
         
-        #Store trajectory values
-        self.trajectories = self.get_trajectories()
+        #Store trajectory values. Set to get_trajectories_cont() until we find a way to impute missing data
+        self.trajectories = self.get_trajectories_cont()
 
     def get_trajectories(self):
         """
@@ -84,6 +84,33 @@ class Data:
             if(i+1 < self.num_visits):
                 trajectories[i] = list(comb(self.which_visits,i+2))
         return tuple(trajectories)
+    
+    def get_trajectories_cont():
+        """
+        JW: Returns continuous trajectories (traj_1,traj_2,...., traj_{max_visits-1}).
+        If some traj_i does not exist, the entry for it will be an empty list.
+        Written to support an arbitrary amount of trajectories
+        """ 
+        def check_consec(t):
+            """
+            checks if the first len(t)-1 tuples are consecutive,
+            unless len(t) = 2, then t[0] and t[1] must be consecutive.
+            """                
+            for i in range(len(t)-2):
+                if t[i+1]-t[i] > 1:
+                    return False
+            return True
+        
+        trajectories = [None]*(max_visits - 1)
+        for i in range(max_visits-1):
+            if(i+1 < num_visits):
+                cont_trajecs = [] #list of continuous trajectories. EX: for T=3, (1,2,5) is continuous (1,3,5) is NOT. 
+                temp = list(comb(which_visits,i+2))
+                for t in temp:
+                    if check_consec(t):
+                        cont_trajecs.append(t)            
+                trajectories[i] = cont_trajecs
+        return tuple(trajectories)    
         
     def get_which_visits(self, visits):
         """
@@ -333,8 +360,6 @@ def get_cov_batch(x):
         for t in range(T-1):
             feat[b, t, :] = x[b, t].covariates
     return feat
-
-
 
 
 
