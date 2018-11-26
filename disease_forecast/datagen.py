@@ -161,7 +161,8 @@ class Data:
                    'MCI':1,
                    'MCI to Dementia':2,
                    'Dementia':2,
-                   'NL to Dementia':2}
+                   'NL to Dementia':2
+                   }
 #       dict_dx = {'NL':1,
 #                   'MCI to NL':2,
 #                   'NL to MCI':3,
@@ -170,8 +171,10 @@ class Data:
 #                   'MCI to Dementia':6,
 #                   'Dementia':7,
 #                   'NL to Dementia':8}
-        
-        return [dict_dx[feat['DX'].values[0]],
+        dx = feat['DX'].values[0]
+        if dx!=dx:
+            dx = 'NL'
+        return [dict_dx[dx],
                 float(feat['ADAS13'].values[0]),
                 float(feat['Ventricles'].values[0])
                 ]
@@ -401,8 +404,7 @@ def get_cov_batch(x, as_tensor=False):
 def get_labels(x, task='dx', as_tensor=False):
     (B, T) = x.shape
     if task=='dx':
-        #  labels = np.array([x[b, -1].metrics[0] for b in range(B)])
-        labels = np.random.randint(0, 3, size=(B))
+        labels = np.array([x[b, -1].metrics[0] for b in range(B)])
         if as_tensor==True:
             labels = torch.from_numpy(labels).long() 
     return labels

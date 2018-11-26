@@ -129,5 +129,3 @@ class Model:
            # STEP 8: MODEL TRAINING -------------------------------------------
            loss.backward()
            self.optm.step()
-
-           ipdb.set_trace()
