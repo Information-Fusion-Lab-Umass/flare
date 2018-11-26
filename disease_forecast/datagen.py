@@ -6,6 +6,8 @@ import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
+import ipdb
+from tqdm import tqdm
 
 class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
     def __init__(self, time_step, feat_flag, pid, img_path, cogtests, 
@@ -22,7 +24,7 @@ class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
 class Data:
     def __init__(self, pid, paths, feat):
         self.pid = pid
-        self.num_visits = len(paths)
+        self.num_visits = 0
         self.max_visits = 5
         self.which_visits = []
 
@@ -37,38 +39,40 @@ class Data:
         flag_get_covariates = 0
         
         temp_visits = []
+        temp_viscodes = ['none']
         for fmeta, fimg in paths:
             # Extract visit code from meta file         
-            viscode = self.get_viscode(fmeta)
-            
-            #append viscode to list of visits
-            temp_visits.append(viscode)
- 
-            # Store image path with viscode as key
-            self.path_imgs[viscode] = fimg
+            viscode = self.get_viscode(fmeta)           
+            if viscode not in temp_viscodes:
+                temp_viscodes.append(viscode)
+                self.num_visits += 1
+                #append viscode to list of visits
+                temp_visits.append(viscode)
+      
+                # Store image path with viscode as key
+                self.path_imgs[viscode] = fimg
 
-            # Store cognitive test data with viscode as key
-            feat_viscode = feat.loc[(feat.PTID==pid) & (feat.VISCODE==viscode)]
-            self.cogtests[viscode] = self.get_cogtest(feat_viscode)
+                # Store cognitive test data with viscode as key
+                feat_viscode = feat.loc[(feat.PTID==pid) & (feat.VISCODE==viscode)]
+                self.cogtests[viscode] = self.get_cogtest(feat_viscode)
 
-            # Store image features
-            self.img_features[viscode] = self.get_img_features(feat_viscode)
+                # Store image features
+                self.img_features[viscode] = self.get_img_features(feat_viscode)
 
-            # Store evaluation metrics with viscode as key
-            self.metrics[viscode] = self.get_metrics(feat_viscode)
+                # Store evaluation metrics with viscode as key
+                self.metrics[viscode] = self.get_metrics(feat_viscode)
 
-            # Store covariate values 
-            if flag_get_covariates==0:
-                self.covariates = self.get_covariates(feat_viscode)
-                flag_get_covariates = 1
+                # Store covariate values 
+                if flag_get_covariates==0:
+                    self.covariates = self.get_covariates(feat_viscode)
+                    flag_get_covariates = 1
                 
         #Store visit values in sorted, integer form
         self.which_visits = self.get_which_visits(temp_visits) 
         
         #Store trajectory values
         self.trajectories = self.get_trajectories()
-                    
-    
+
     def get_trajectories(self):
         """
         JW: Returns (traj_1,traj_2,...., traj_{max_visits-1}).
@@ -171,8 +175,12 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
         # Iterate over identifier files
         for f in pmeta:
             # Get image path
-            f_img = glob(os.path.dirname(f).\
-                    replace(path_meta, path_images)+'/*.nii')
+            for idx_imgdir in range(1, 11):        
+                f_img = glob(os.path.dirname(f).\
+                        replace(path_meta, path_images+\
+                        '/'+str(idx_imgdir)+'/ADNI')+'/*.nii')
+                if len(f_img)==1:
+                    break
             if len(f_img)==1:
                 f_img = f_img[0]
                 # Get metadata path
@@ -194,10 +202,10 @@ def get_datagen(data, data_split, batch_size, feat_flag):
     data_items = list(data.values())
     data_train = data_items[:int(data_split*len(data_items))]
     data_val = data_items[len(data_train):]
-    print(len(data_train), len(data_val))
+    print('Train = {}, Val = {}'.format(len(data_train), len(data_val)))
 
     # Get data Generator
-    n_t = 2 # np.random.randint(4)
+    n_t = 2#np.random.randint(1, 5)
     datagen_train = get_Batch(data_train, batch_size, n_t, feat_flag)
     datagen_val = get_Batch(data_val, batch_size, n_t, feat_flag)
 
@@ -244,6 +252,7 @@ def get_Batch(patients,B,n_t,feat_flag):
     patient_idx = list(chain.from_iterable(patient_idx))
     #print(patient_idx)
     num_trajs = len(selections)
+    print(n_t, num_trajs)
     if(B > num_trajs): 
         raise ValueError("Batch size: '{}' is larger than number of trajectories: '{}'".format(B,num_trajs))
    

@@ -14,7 +14,8 @@ class Model:
                 'tadpole': models.Tadpole,
                 'long': models.Longitudinal,
                 'cov': models.Covariate,
-                'lstm': models.LSTM
+                'lstm': models.LSTM,
+                'append_time' : models.AppendTime
                 #  'cnn3d': models.Sononet3d
                 }
         
@@ -33,47 +34,56 @@ class Model:
         self.model_temporal = model_dict[model_temporal_name](**module_temporal)
         #
         #  # Load model: forecast architecture
-        #  model_forecast_name = module_forecast.pop('name')
-        #  self.model_forecast = model_dict[model_forecast_name](**module_forecast)
+        model_forecast_name = module_forecast.pop('name')
+        self.model_forecast = model_dict[model_forecast_name](**module_forecast)
 
         self.fusion = fusion
 
-    def train(self, datagen_train, datagen_val, exp_dir, 
-            num_epochs):
-
+    def train(self, datagen_train, datagen_val, exp_dir, num_epochs):
+        
+       print('Training ...')
        # For each epoch,
        for epoch in range(num_epochs):
 
            x_train_batch = next(datagen_train)
+           print('Train batch shape = ', x_train_batch.shape)
 
            # Get image features
            # x_img_feat: (B, T, F_i)
            x_img_data, T = datagen.get_img_batch(x_train_batch) 
+           print('Image input dims = ', x_img_data.shape)
+           print('num timesteps = ', T)
            x_img_feat = []
            for t in range(T-1):
                x_img_feat.append(self.model_image.forward(x_img_data[:,t]))
-           x_img_feat = np.array(x_img_feat)
+           x_img_feat = np.swapaxes(np.array(x_img_feat), 0, 1)
+           print('Image output dims = ', x_img_feat.shape)
            assert x_img_data.all() == x_img_feat.all()
 
            # Get longitudinal features
            # x_long_feat: (B, T, F_l)
            x_long_data = datagen.get_long_batch(x_train_batch)
+           print('Long input dims = ', x_long_data.shape)
            x_long_feat = []
            for t in range(T-1):
                x_long_feat.append(self.model_long.forward(x_long_data[:, t], output='numpy'))
-           x_long_feat = np.array(x_long_feat)
+           x_long_feat = np.swapaxes(np.array(x_long_feat), 0, 1)
+           print('Long output dims = ', x_long_feat.shape)
 
            # Get covariate features
            # x_cov_feat: (B, T, F_c)
            x_cov_data = datagen.get_cov_batch(x_train_batch)
+           print('Cov input dims = ', x_cov_data.shape)
            x_cov_feat = []
            for t in range(T-1):
                x_cov_feat.append(self.model_cov.forward(x_cov_data[:, t], output='numpy'))
-           x_cov_feat = np.array(x_cov_feat)
+           x_cov_feat = np.swapaxes(np.array(x_cov_feat), 0, 1)
+           print('Long input dims = ', x_cov_feat.shape)
 
            # Fuse the features
            if self.fusion=='latefuse':
                x_feat = np.concatenate((x_img_feat, x_long_feat, x_cov_feat), axis=-1)
+           print('Feature fusion dims = ', x_feat.shape)
            #  elif self.fusion=='shortfuse':
            #      x_feat = models.shortfuse(x_img_feat, x_long_feat, x_cov_feat)
 
@@ -82,8 +92,11 @@ class Model:
                x_temp = x_feat
            else:
                x_temp = self.model_temporal.forward(x_feat, output='numpy')
+           print('Temporal dims = ', x_temp.shape)
           
            # Forecasting Module
+           x_forecast = self.model_forecast.forward(x_temp, output='numpy')
+           print('Forecast dims = ', x_forecast.shape)
 
            ipdb.set_trace()
 

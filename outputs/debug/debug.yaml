@@ -4,14 +4,15 @@ output_dir: &output ../outputs
 
 # Data
 data:
+    path_load: ../data/data.pickle
     path_meta: ../data/metadata
-    path_images: ../data/images_small
+    path_images: ../../../ADNI_data/data
     path_feat: ../data/features.csv
     min_visits: 2
 
 datagen:
     data_split: 0.8
-    batch_size: 1
+    batch_size: 16
     feat_flag: &imgType tadpole 
 
 # Model 

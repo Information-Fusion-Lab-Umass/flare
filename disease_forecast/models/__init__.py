@@ -1,4 +1,4 @@
-from .Tadpole import Tadpole
-from .Longitudinal import Longitudinal
-from .Covariate import Covariate
-from .LSTM import LSTM
+from .image import Tadpole
+from .long_cov import Longitudinal, Covariate
+from .temporal import LSTM
+from .forecast import AppendTime
