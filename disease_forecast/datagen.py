@@ -295,8 +295,8 @@ def get_Batch(patients,B,n_t,feat_flag):
     yield ret
 
 # Given a (BxT) array of DataBatch objects, return the image paths/features
-# as a (BxT) paths (CNN) or (BxTxF) features (tadpole)
-def get_img_batch(x):
+# as a (BxT-1) paths (CNN) or (BxT-1xF) features (tadpole)
+def get_img_batch(x, as_tensor=False):
     (B, T) = x.shape
     img_type = x[0, 0].image_type
     if img_type =='tadpole':
@@ -310,29 +310,59 @@ def get_img_batch(x):
         for b in range(B):
             for t in range(T-1):                
                 feat[b, t] = x[b, t].img_path
-    return feat, T
+    if as_tensor==True:
+        feat = torch.from_numpy(feat).float()
+    return feat
+
+# Given a (BxT) array of DataBatch objects, return the time indices
+# as (BxT) matrix
+def get_time_batch(x, as_tensor=False):
+    (B, T) = x.shape
+    timeidx = np.zeros((B, T))
+    for b in range(B):
+        for t in range(T):
+            timeidx[b, t] = x[b, t].time_step
+    if as_tensor==True:
+        timeidx = torch.from_numpy(timeidx).float()
+    return timeidx
+
 
 # Given a (BxT) array of DataBatch objects, return the cognitive tests
-# as (BxTxF) features
-def get_long_batch(x):
+# as (BxT-1xF) features
+def get_long_batch(x, as_tensor=False):
     (B, T) = x.shape
     num_feat = len(x[0, 0].cogtests)
     feat = np.zeros((B, T-1, num_feat))
     for b in range(B):
         for t in range(T-1):
             feat[b, t, :] = x[b, t].cogtests
+    if as_tensor==True:
+        feat = torch.from_numpy(feat).float()           
     return feat
 
 # Given a (BxT) array of DataBatch objects, return the covariates
-# as (BxTxF) features
-def get_cov_batch(x):
+# as (BxT-1xF) features
+def get_cov_batch(x, as_tensor=False):
     (B, T) = x.shape
     num_feat = len(x[0, 0].covariates)
     feat = np.zeros((B, T-1, num_feat))
     for b in range(B):
         for t in range(T-1):
             feat[b, t, :] = x[b, t].covariates
+    if as_tensor==True:
+        feat = torch.from_numpy(feat).float()           
     return feat
+
+# Given a (BxT) array of DataBatch objects and the task name, 
+# return the labels as (BxF) tensor
+def get_labels(x, task='dx', as_tensor=False):
+    (B, T) = x.shape
+    if task=='dx':
+        #  labels = np.array([x[b, -1].metrics[0] for b in range(B)])
+        labels = np.random.randint(0, 3, size=(B))
+        if as_tensor==True:
+            labels = torch.from_numpy(labels).long() 
+    return labels
 
 
 
