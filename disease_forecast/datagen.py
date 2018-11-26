@@ -85,7 +85,7 @@ class Data:
                 trajectories[i] = list(comb(self.which_visits,i+2))
         return tuple(trajectories)
     
-    def get_trajectories_cont():
+    def get_trajectories_cont(self):
         """
         JW: Returns continuous trajectories (traj_1,traj_2,...., traj_{max_visits-1}).
         If some traj_i does not exist, the entry for it will be an empty list.
@@ -101,11 +101,11 @@ class Data:
                     return False
             return True
         
-        trajectories = [None]*(max_visits - 1)
-        for i in range(max_visits-1):
-            if(i+1 < num_visits):
+        trajectories = [None]*(self.max_visits - 1)
+        for i in range(self.max_visits-1):
+            if(i+1 < self.num_visits):
                 cont_trajecs = [] #list of continuous trajectories. EX: for T=3, (1,2,5) is continuous (1,3,5) is NOT. 
-                temp = list(comb(which_visits,i+2))
+                temp = list(comb(self.which_visits,i+2))
                 for t in temp:
                     if check_consec(t):
                         cont_trajecs.append(t)            
