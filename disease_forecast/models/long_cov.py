@@ -7,11 +7,8 @@ class Longitudinal(nn.Module):
         super(Longitudinal, self).__init__()
         self.affine = nn.Linear(4, 10)
         
-    def forward(self, x, output='tensor'):        
-        x = torch.from_numpy(x).float()
+    def forward(self, x):        
         x = F.relu(self.affine(x))
-        if output=='numpy':
-            x = x.data.numpy()
         return x
 
 class Covariate(nn.Module):
@@ -20,10 +17,7 @@ class Covariate(nn.Module):
         self.affine = nn.Linear(3, 10)
         
     def forward(self, x, output='tensor'):        
-        x = torch.from_numpy(x).float()
         x = F.relu(self.affine(x))
-        if output=='numpy':
-            x = x.data.numpy()
         return x
 
 

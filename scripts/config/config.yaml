@@ -23,6 +23,8 @@ model:
         name: lstm
     module_forecast:
         name: append_time
+    module_task:
+        name: dx
     fusion: latefuse
         
 train:
