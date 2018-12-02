@@ -7,8 +7,10 @@ class Longitudinal(nn.Module):
         super(Longitudinal, self).__init__()
         self.affine = nn.Linear(4, 10)
         
-    def forward(self, x):        
-        x = F.relu(self.affine(x))
+    def forward(self, x): 
+        x = self.affine(x)
+        x = nn.BatchNorm1d(x.shape[1])(x)
+        x = F.relu(x)
         return x
 
 class Covariate(nn.Module):
@@ -17,7 +19,9 @@ class Covariate(nn.Module):
         self.affine = nn.Linear(3, 10)
         
     def forward(self, x, output='tensor'):        
-        x = F.relu(self.affine(x))
+        x = self.affine(x)
+        x = nn.BatchNorm1d(x.shape[1])(x)
+        x = F.relu(x)
         return x
 
 

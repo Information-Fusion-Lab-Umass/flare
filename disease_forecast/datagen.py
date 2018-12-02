@@ -13,7 +13,7 @@ class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
     def __init__(self, time_step, feat_flag, pid, img_path, cogtests, 
             covariates, metrics, img_features):
         self.time_step = time_step
-        self.image_type = feat_flag #is set to 'tadpole' or 'cnn3d' depending on which image features we train on
+        self.image_type = feat_flag #'tadpole' or 'cnn3d' 
         self.pid = pid #pid of patient that features are taken from
         self.img_path = img_path #Path of image
         self.cogtests = cogtests #Cognitive tests score
@@ -131,12 +131,12 @@ class Data:
         return sorted(which_visits)         
     
     def get_cogtest(self, feat):
-        return [
+        return list(np.nan_to_num([
                 float(feat['ADAS11'].values[0]),
                 float(feat['CDRSB'].values[0]),
                 float(feat['MMSE'].values[0]),
                 float(feat['RAVLT_immediate'].values[0])
-                ]
+                ]))
     
     # Extract image features. len = 692. 
     # Several values are missing (' '). Replaced with 0
@@ -243,7 +243,7 @@ def get_data(path_meta, path_images, path_feat, min_visits=1):
 
     return data 
 
-def get_datagen(data, data_split, batch_size, feat_flag):
+def get_datagen(data, data_split, batch_size, num_visits, feat_flag):
     # Get Train and Test PIDs
     data_items = list(data.values())
     data_train = data_items[:int(data_split*len(data_items))]
@@ -251,7 +251,7 @@ def get_datagen(data, data_split, batch_size, feat_flag):
     print('Train = {}, Val = {}'.format(len(data_train), len(data_val)))
 
     # Get data Generator
-    n_t = 2#np.random.randint(1, 5)
+    n_t = np.random.randint(1, 5) if num_visits==-1 else num_visits
     datagen_train = get_Batch(data_train, batch_size, n_t, feat_flag)
     datagen_val = get_Batch(data_val, batch_size, n_t, feat_flag)
 
@@ -265,80 +265,80 @@ def get_Batch(patients,B,n_t,feat_flag):
         'B': Integer value which represents the batch size
         'n_t': Integer between 1 and the number of trajectory types traj_{n_t}. 
                used to select which trajectory type we want to sample from
-        'feat_flag': String that is set to 'tadpole' or 'image' depending what kind of image
-                     features we want to train with.
-    
+        'feat_flag': String that is set to 'tadpole' or 'image' 
+                    depending what kind of image features we want to train with.
     Returns:
         'ret': a BxT matrix of Data_Batch objects 
     """
-    T = n_t+1 #number of visits in traj_{n_t}. 
-    
-    ret = np.empty((B,T),dtype=object)
-    dict_int2visit = {0:'bl', #reverse dictionary
-               1:'m06',
-               2:'m12',
-               3:'m18',
-               4:'m24',
-               5:'m36',
-              -1:'none'}
-    
-    selections = []
-    patient_idx = []
-    
-    for idx,p in enumerate(patients):
-        item = p.trajectories[n_t-1]
-        #Check if trajectory exists. If it doesn't, don't concat it.
-        if item is not None: 
-            traj_len = len(item)
-            selections.append(item)
-            patient_idx.append([idx]*traj_len)
-        
-    selections = list(chain.from_iterable(selections))
-    #print(selections)
-    patient_idx = list(chain.from_iterable(patient_idx))
-    #print(patient_idx)
-    num_trajs = len(selections)
-    print(n_t, num_trajs)
-    if(B > num_trajs): 
-        raise ValueError("Batch size: '{}' is larger than number of trajectories: '{}'".format(B,num_trajs))
-   
-    samples_idx = np.random.choice(len(selections),B,replace=False)
-    
-    samples = [selections[i] for i in samples_idx] #list of B trajectories chosen for batch.
-    samples_p = [patients[patient_idx[i]] for i in samples_idx] #list of B patient Data objects corresponding to ones chosen for Batch
-    
-    #print(samples)
-    #print([patient_idx[i] for i in samples_idx])
-    
     def one_batch_one_patient(p,sample):
-        """
-        JW:
-        arguments:
-            'p':  Data object corresponding to a patient.
-            'sample': List of integers. It is the trajectory we want to 
-                     create the batch entry for.
-                 
-        Description: Produces batch entry for given patient for each timestep in a sample.
-       
-        returns:
-            'ret': a generator of Data_Batch objects which has T entries.
-        """
-        batch = []
-        for time_step in sample:
-            key = dict_int2visit[time_step]
-            batch.append(Data_Batch(time_step,feat_flag,
-                            p.pid,
-                            p.path_imgs[key],
-                            p.cogtests[key],
-                            p.covariates,
-                            p.metrics[key],
-                            p.img_features[key]))
-        return batch
-    
-    for idx in range(B):
-        temp = one_batch_one_patient(samples_p[idx],samples[idx])
-        ret[idx,:] = temp
-    yield ret
+            """
+            JW:
+            arguments:
+                'p':  Data object corresponding to a patient.
+                'sample': List of integers. It is the trajectory we want to 
+                          create the batch entry for.
+            Description: Produces batch entry for given patient for each 
+                        timestep in a sample.
+            returns:
+                'ret': a generator of Data_Batch objects which has T entries.
+            """
+            batch = []
+            for time_step in sample:
+                key = dict_int2visit[time_step]
+                batch.append(Data_Batch(time_step,feat_flag,
+                                p.pid,
+                                p.path_imgs[key],
+                                p.cogtests[key],
+                                p.covariates,
+                                p.metrics[key],
+                                p.img_features[key]))
+            return batch
+
+    while 1:
+        T = n_t+1 #number of visits in traj_{n_t}. 
+        
+        ret = np.empty((B,T),dtype=object)
+        dict_int2visit = {0:'bl', #reverse dictionary
+                      1:'m06',
+                      2:'m12',
+                      3:'m18',
+                      4:'m24',
+                      5:'m36',
+                    -1:'none'}
+        
+        selections = []
+        patient_idx = []
+        
+        for idx,p in enumerate(patients):
+            item = p.trajectories[n_t-1]
+            #Check if trajectory exists. If it doesn't, don't concat it.
+            if item is not None: 
+                traj_len = len(item)
+                selections.append(item)
+                patient_idx.append([idx]*traj_len)
+            
+        selections = list(chain.from_iterable(selections))
+        #print(selections)
+        patient_idx = list(chain.from_iterable(patient_idx))
+        #print(patient_idx)
+        num_trajs = len(selections)
+        #  print(n_t, num_trajs)
+        if(B > num_trajs): 
+            raise ValueError("Batch size: '{}' is larger than number \
+                    of trajectories: '{}'".format(B,num_trajs))
+          
+        samples_idx = np.random.choice(len(selections),B,replace=False)
+        #list of B trajectories chosen for batch.
+        samples = [selections[i] for i in samples_idx] 
+        #list of B patient Data objects corresponding to ones chosen for Batch
+        samples_p = [patients[patient_idx[i]] for i in samples_idx] 
+        #print(samples)
+        #print([patient_idx[i] for i in samples_idx])
+        
+        for idx in range(B):
+            temp = one_batch_one_patient(samples_p[idx],samples[idx])
+            ret[idx,:] = temp
+        yield ret
 
 # Given a (BxT) array of DataBatch objects, return the image paths/features
 # as a (BxT-1) paths (CNN) or (BxT-1xF) features (tadpole)
@@ -371,7 +371,6 @@ def get_time_batch(x, as_tensor=False):
     if as_tensor==True:
         timeidx = torch.from_numpy(timeidx).float()
     return timeidx
-
 
 # Given a (BxT) array of DataBatch objects, return the cognitive tests
 # as (BxT-1xF) features

@@ -12,7 +12,6 @@ import pickle
 import numpy as np
 from disease_forecast import datagen, utils, engine
 
-
 def main(config_file):
     
     # Parser config file
@@ -52,7 +51,7 @@ def main(config_file):
     model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
-    #  model.test(**config['test'])
+	model.test(**config['test'])
 
     return data, datagen_train, datagen_val
 
@@ -60,9 +59,13 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
-    data, dgt, dgv = main(args.config)
+    main(args.config)
+    #  data, dgt, dgv = main(args.config)
+    #  print(len(data))
     #  for key in data:
-    #      print(data[key].trajectories[1])
+    #      for vis in data[key].cogtests:
+    #          if np.isnan(data[key].cogtests[vis]).any():
+    #              print(key, vis, data[key].cogtests[vis])
     #  ipdb.set_trace()
     #
     #  #tests

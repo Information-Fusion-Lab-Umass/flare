@@ -11,4 +11,13 @@ class AppendTime(nn.Module):
         x = torch.cat((x, diff_t), 1) 
         return x
 
+class MultiplyTime(nn.Module):
+    def __init__(self):
+        super(MultiplyTime, self).__init__()
+        
+    def forward(self, x, t): 
+        diff_t = (t[:,-1] - t[:,-2]).view(-1, 1)
+        x = x*diff_t 
+        return x
+
 
