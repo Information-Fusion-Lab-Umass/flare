@@ -142,21 +142,8 @@ class Model:
         print('cmat:')
         print(cmat)
 
-    def test(self, data, exp_dir):
+    def test(self, data, data_split, feat_flag):
         N = len(data)
-        for key in data:
-            trajs = data[key].traje
-
-
-        for t in range(1, 5):
-        	data = datagen.get_timeBatch(
-            for gap in range(1, 6-t):
-               data = # (N_t_gap , 
-               y = 
-               ypred = 
-               conf_matrix = 
-
-
-
-
-
+        for n_t in range(1, 5):
+            data_t = datagen.get_timeBatch(data, n_t, feat_flag)
+            print(data_t.shape)

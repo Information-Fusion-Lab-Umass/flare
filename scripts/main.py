@@ -41,7 +41,8 @@ def main(config_file):
 
     # Datagens
     t = time()
-    datagen_train, datagen_val = datagen.get_datagen(data, **config['datagen'])
+    (datagen_train, data_train), (datagen_val, data_val) =\
+            datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
 
     # Define Classification model
@@ -51,7 +52,8 @@ def main(config_file):
     model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
-    model.test(data, **config['test'])
+    model.test(data_train, **config['test'])
+    model.test(data_val, **config['test'])
 
     return data, datagen_train, datagen_val
 

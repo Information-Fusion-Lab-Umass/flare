@@ -11,7 +11,7 @@ data:
     min_visits: 2
 
 datagen:
-    data_split: 0.8
+    data_split: &data_split 0.8
     batch_size: 32
     num_visits: 2
     feat_flag: &imgType tadpole 
@@ -31,3 +31,9 @@ model:
 # Train           
 train:
     num_epochs: 1000 
+
+# Test        
+test:
+    data_split: *data_split
+    feat_flag: *imgType
+
