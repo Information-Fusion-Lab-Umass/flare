@@ -113,7 +113,7 @@ class Model:
         # STEP 6: MODULE 3: FORECASTING ------------------------------------
         # x_forecast: (B, F_f)
         x_forecast = self.model_forecast.forward(x_temp, x_time_data)
-        # print('Forecast dims = ', x_forecast.shape)
+        #  print('Forecast dims = ', x_forecast.shape)
  
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
@@ -142,8 +142,46 @@ class Model:
         print('cmat:')
         print(cmat)
 
-    def test(self, data, data_split, feat_flag):
-        N = len(data)
+    def test(self, data, exp_dir, data_split, batch_size, feat_flag):
+        cnf_matrix = np.empty((4, 5), dtype=object)
         for n_t in range(1, 5):
             data_t = datagen.get_timeBatch(data, n_t, feat_flag)
-            print(data_t.shape)
+            time_t = datagen.get_time_batch(data_t, as_tensor=True)
+            time_t = (time_t[:,-1] - time_t[:,-2]).data.numpy()
+            (N, T) = data_t.shape
+            num_batches = int(N/batch_size)
+            for i in range(num_batches):
+                data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
+                y_pred_i = self.predict(data_t_batch)
+                y_dx_i = datagen.get_labels(data_t_batch, task='dx', as_tensor=True)
+                if i == 0:
+                    y_pred, y_dx = y_pred_i, y_dx_i
+                else:
+                    y_pred = torch.cat((y_pred, y_pred_i), 0) 
+                    y_dx = torch.cat((y_dx, y_dx_i), 0) 
+                #  cmat = evaluate.confmatrix_dx(y_pred, y_dx)
+            data_t_batch = data_t[num_batches*batch_size:]                        
+            #  print(data_t_batch.shape)
+            if data_t_batch.shape[0]>1:
+                y_pred = torch.cat((y_pred, self.predict(data_t_batch)), 0)
+                y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
+                        task='dx', as_tensor=True)), 0)            
+            #  print(n_t, min(time_t), max(time_t), y_pred.shape, y_dx.shape, data_t.shape)
+            for t in range(6-n_t):
+                idx = np.where(time_t[:len(y_dx)]==t+1) 
+                cnf_matrix[n_t-1, t] = evaluate.cmatCell(
+                        evaluate.confmatrix_dx(y_pred[idx], y_dx[idx]))
+                #  print(cnf_matrix[n_t, t].cmat)
+        cnf_matrix = evaluate.get_output(cnf_matrix, exp_dir, 'dx')
+        return cnf_matrix
+
+
+
+
+
+
+
+
+
+
+

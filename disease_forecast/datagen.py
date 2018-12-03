@@ -266,7 +266,7 @@ def get_datagen(data, data_split, batch_size, num_visits, feat_flag):
 #      data_val = data_items[len(data_train):]
 #      print('Train = {}, Val = {}'.format(len(data_train), len(data_val)))
 
-def one_batch_one_patient(p,sample):
+def one_batch_one_patient(p,sample,feat_flag):
     """
     JW:
     arguments:
@@ -278,6 +278,13 @@ def one_batch_one_patient(p,sample):
     returns:
         'ret': a generator of Data_Batch objects which has T entries.
     """
+    dict_int2visit = {0:'bl', #reverse dictionary
+                    1:'m06',
+                    2:'m12',
+                    3:'m18',
+                    4:'m24',
+                    5:'m36',
+                -1:'none'}
     batch = []
     for time_step in sample:
         key = dict_int2visit[time_step]
@@ -292,14 +299,6 @@ def one_batch_one_patient(p,sample):
 
 def get_timeBatch(patients, n_t, feat_flag):
     T = n_t+1 #number of visits in traj_{n_t}.
-    
-    dict_int2visit = {0:'bl', #reverse dictionary
-                    1:'m06',
-                    2:'m12',
-                    3:'m18',
-                    4:'m24',
-                    5:'m36',
-                -1:'none'}
     
     selections = []
     patient_idx = []
@@ -327,7 +326,7 @@ def get_timeBatch(patients, n_t, feat_flag):
     
     ret = np.empty((num_trajs, T),dtype=object)
     for idx in range(num_trajs):
-        temp = one_batch_one_patient(samples_p[idx], samples[idx])
+        temp = one_batch_one_patient(samples_p[idx], samples[idx], feat_flag)
         ret[idx,:] = temp
     return ret
 
@@ -348,13 +347,13 @@ def get_Batch(patients,B,n_t,feat_flag):
         T = n_t+1 #number of visits in traj_{n_t}. 
         
         ret = np.empty((B,T),dtype=object)
-        dict_int2visit = {0:'bl', #reverse dictionary
-                      1:'m06',
-                      2:'m12',
-                      3:'m18',
-                      4:'m24',
-                      5:'m36',
-                    -1:'none'}
+        #  dict_int2visit = {0:'bl', #reverse dictionary
+        #                1:'m06',
+        #                2:'m12',
+        #                3:'m18',
+        #                4:'m24',
+        #                5:'m36',
+        #              -1:'none'}
         
         selections = []
         patient_idx = []
@@ -386,7 +385,7 @@ def get_Batch(patients,B,n_t,feat_flag):
         #print([patient_idx[i] for i in samples_idx])
         
         for idx in range(B):
-            temp = one_batch_one_patient(samples_p[idx],samples[idx])
+            temp = one_batch_one_patient(samples_p[idx],samples[idx],feat_flag)
             ret[idx,:] = temp
         yield ret
 
