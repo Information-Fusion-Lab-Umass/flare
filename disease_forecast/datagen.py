@@ -253,9 +253,8 @@ def get_datagen(data, data_split, batch_size, num_visits, feat_flag):
     print('Train = {}, Val = {}'.format(len(data_train), len(data_val)))
 
     # Get data Generator
-    n_t = np.random.randint(1, 5) if num_visits==-1 else num_visits
-    datagen_train = get_Batch(data_train, batch_size, n_t, feat_flag)
-    datagen_val = get_Batch(data_val, batch_size, n_t, feat_flag)
+    datagen_train = get_Batch(data_train, batch_size, num_visits, feat_flag)
+    datagen_val = get_Batch(data_val, batch_size, num_visits, feat_flag)
 
     return (datagen_train, data_train), (datagen_val, data_val)
 
@@ -330,7 +329,7 @@ def get_timeBatch(patients, n_t, feat_flag):
         ret[idx,:] = temp
     return ret
 
-def get_Batch(patients,B,n_t,feat_flag):
+def get_Batch(patients, B, num_visits, feat_flag):
     """
     JW:
     Arguments:
@@ -344,6 +343,7 @@ def get_Batch(patients,B,n_t,feat_flag):
         'ret': a BxT matrix of Data_Batch objects 
     """
     while 1:
+        n_t = np.random.randint(1, 5) if num_visits==0 else num_visits
         T = n_t+1 #number of visits in traj_{n_t}. 
         
         ret = np.empty((B,T),dtype=object)

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from disease_forecast import utils
 
 class AppendTime(nn.Module):
     def __init__(self):
@@ -8,7 +9,8 @@ class AppendTime(nn.Module):
         
     def forward(self, x, t): 
         diff_t = (t[:,-1] - t[:,-2]).view(-1, 1)
-        x = torch.cat((x, diff_t), 1) 
+        diff_t_onehot = utils.one_hot(diff_t)
+        x = torch.cat((x, diff_t_onehot), 1) 
         return x
 
 class MultiplyTime(nn.Module):

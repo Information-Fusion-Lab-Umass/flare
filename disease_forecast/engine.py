@@ -137,7 +137,8 @@ class Model:
             loss.backward() 
             self.optm.step()
             if epoch%100 == 0:
-                print('Loss at epoch {} = {}'.format(epoch+1, loss.data.numpy()))
+                print('Loss at epoch {} = {}, T = {}'.\
+                        format(epoch+1, loss.data.numpy(), x_train_batch.shape[1]))
 
     def test(self, data, exp_dir, data_type, data_split, batch_size, feat_flag):
         cnf_matrix = np.empty((4, 5), dtype=object)
