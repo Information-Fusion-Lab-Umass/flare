@@ -22,14 +22,14 @@ def get_output(cmat, exp_dir, task='dx'):
 
         fig, ax = plt.subplots()
         im = ax.imshow(cmat_out)
-        ax.set_xticks(np.arange(num_gap)+1)
-        ax.set_yticks(np.arange(num_T)+1)
-        for i in range(num_T):
-            for j in range(num_gap):
-                text = ax.text(j, i, cmat_out[i, j],\
+        ax.set_xticks(np.arange(0, num_gap*3, 3))
+        ax.set_yticks(np.arange(0, num_T*3, 3))
+        for i in range(num_T*3):
+            for j in range(num_gap*3):
+                text = ax.text(j, i, round(cmat_out[i, j]*100, 1), \
                         ha="center", va="center", color="w")
-                ax.set_title("Confusion Matrix")
-                fig.tight_layout()
+        ax.set_title("Confusion Matrix")
+        fig.tight_layout()
         plt.savefig(exp_dir+'/output.png', dpi=300)
 
 def confmatrix_dx(ypred, y):
