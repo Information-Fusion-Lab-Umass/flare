@@ -142,6 +142,21 @@ class Model:
         print('cmat:')
         print(cmat)
 
+    def test(self, data, exp_dir):
+        N = len(data)
+        for key in data:
+            trajs = data[key].traje
+
+
+        for t in range(1, 5):
+        	data = datagen.get_timeBatch(
+            for gap in range(1, 6-t):
+               data = # (N_t_gap , 
+               y = 
+               ypred = 
+               conf_matrix = 
+
+
 
 
 

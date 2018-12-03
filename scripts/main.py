@@ -51,7 +51,7 @@ def main(config_file):
     model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
-	model.test(**config['test'])
+    model.test(data, **config['test'])
 
     return data, datagen_train, datagen_val
 
