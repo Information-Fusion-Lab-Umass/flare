@@ -138,11 +138,8 @@ class Model:
             self.optm.step()
             if epoch%100 == 0:
                 print('Loss at epoch {} = {}'.format(epoch+1, loss.data.numpy()))
-        cmat = evalmetrics.confmatrix_dx(y_pred, y_dx)
-        print('cmat:')
-        print(cmat)
 
-    def test(self, data, exp_dir, data_split, batch_size, feat_flag):
+    def test(self, data, exp_dir, data_type, data_split, batch_size, feat_flag):
         cnf_matrix = np.empty((4, 5), dtype=object)
         for n_t in range(1, 5):
             data_t = datagen.get_timeBatch(data, n_t, feat_flag)
@@ -172,8 +169,7 @@ class Model:
                 cnf_matrix[n_t-1, t] = evaluate.cmatCell(
                         evaluate.confmatrix_dx(y_pred[idx], y_dx[idx]))
                 #  print(cnf_matrix[n_t, t].cmat)
-        cnf_matrix = evaluate.get_output(cnf_matrix, exp_dir, 'dx')
-        return cnf_matrix
+        cnf_matrix = evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx')
 
 
 

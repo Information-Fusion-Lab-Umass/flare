@@ -10,7 +10,7 @@ class cmatCell:
     def __init__(self, cmat):
         self.cmat = cmat
 
-def get_output(cmat, exp_dir, task='dx'):
+def get_output(cmat, exp_dir, data_type, task='dx'):
     (num_T, num_gap) = cmat.shape
     if task=='dx':
         cmat_out = np.zeros((num_T*3, num_gap*3))
@@ -18,7 +18,7 @@ def get_output(cmat, exp_dir, task='dx'):
             for tau in range(num_gap):
                 if cmat[t, tau] != None:
                     cmat_out[t*3:(t+1)*3, tau*3:(tau+1)*3] = cmat[t, tau].cmat
-        savemat(exp_dir+'/output.mat', {'cmat':cmat_out})
+        savemat(exp_dir+'/output_'+data_type+'.mat', {'cmat':cmat_out})
 
         fig, ax = plt.subplots()
         im = ax.imshow(cmat_out)
@@ -30,7 +30,7 @@ def get_output(cmat, exp_dir, task='dx'):
                         ha="center", va="center", color="w")
         ax.set_title("Confusion Matrix")
         fig.tight_layout()
-        plt.savefig(exp_dir+'/output.png', dpi=300)
+        plt.savefig(exp_dir+'/output_'+data_type+'.png', dpi=300)
 
 def confmatrix_dx(ypred, y):
     (N, C) = ypred.shape

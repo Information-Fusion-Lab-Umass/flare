@@ -49,13 +49,13 @@ def main(config_file):
     model = engine.Model(**config['model'])
 
     # Train the model
-    #  model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
     print('Train data : ')
-    model.test(data_train, exp_dir, **config['test'])
-    #  print('Val data : ')
-    #  model.test(data_val, **config['test'])
+    model.test(data_train, exp_dir, 'train', **config['test'])
+    print('Val data : ')
+    model.test(data_val, exp_dir, 'val', **config['test'])
 
     return data, datagen_train, datagen_val
 
