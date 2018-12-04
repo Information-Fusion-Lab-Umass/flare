@@ -57,6 +57,7 @@ class Model(nn.Module):
         
     def forward(self, data_batch):
         (B, T) = data_batch.shape
+        T = 2 if T == 1 else T
         # STEP 2: EXTRACT INPUT VALUES -------------------------------------
         # Get time data : x_time_data = (B, T)
         x_time_data = datagen.get_time_batch(data_batch, as_tensor=True)
@@ -67,12 +68,9 @@ class Model(nn.Module):
         # Get covariate data : x_cov_data: (B, T-1, Dc)
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True)
         #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
-                   #  format(x_time_data.shape, x_img_data.shape, \
-                   #  x_long_data.shape, x_cov_data.shape))
+        #             format(x_time_data.shape, x_img_data.shape, \
+        #             x_long_data.shape, x_cov_data.shape))
         
-        # STEP 3: EXTRACT TASK LABELS ---------------------------------------
-        #  y_dx = datagen.get_labels(data_batch, task='dx', as_tensor=True)
- 
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
         x_img_data = x_img_data.view(B*(T-1), 1, -1)
@@ -193,16 +191,42 @@ class Engine:
 
         # Save the model
         if save_model:
-            torch.save(self.model.state_dict(), exp_dir+'/checkpoints/model.pth')
+            torch.save(self.model.state_dict(), exp_dir+'/checkpoints/model.pth')      
 
-    def test(self, data, exp_dir, data_type, data_split, batch_size, feat_flag):
-        cnf_matrix = np.empty((4, 5), dtype=object)
-        self.model.eval()
-        for n_t in range(1, 5):
-            data_t = datagen.get_timeBatch(data, n_t, feat_flag)
-            time_t = datagen.get_time_batch(data_t, as_tensor=True)
-            time_t = (time_t[:,-1] - time_t[:,-2]).data.numpy()
-            (N, T) = data_t.shape
+    def test(self, data, exp_dir, data_type, task, data_split, batch_size, feat_flag):
+        if task == 'forecast':
+            cnf_matrix = np.empty((4, 5), dtype=object)
+            self.model.eval()
+            for n_t in range(1, 5):
+                data_t = datagen.get_timeBatch(data, n_t, feat_flag)
+                time_t = datagen.get_time_batch(data_t, as_tensor=True)
+                time_t = (time_t[:,-1] - time_t[:,-2]).data.numpy()
+                (N, T) = data_t.shape
+                num_batches = int(N/batch_size)
+                for i in range(num_batches):
+                    data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
+                    y_pred_i = self.model(data_t_batch)
+                    y_dx_i = datagen.get_labels(data_t_batch, \
+                            task='dx', as_tensor=True)
+                    if i == 0:
+                        y_pred, y_dx = y_pred_i, y_dx_i
+                    else:
+                        y_pred = torch.cat((y_pred, y_pred_i), 0) 
+                        y_dx = torch.cat((y_dx, y_dx_i), 0) 
+                data_t_batch = data_t[num_batches*batch_size:]                        
+                if data_t_batch.shape[0]>1:
+                    y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
+                    y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
+                            task='dx', as_tensor=True)), 0)            
+                for t in range(6-n_t):
+                    idx = np.where(time_t[:len(y_dx)]==t+1) 
+                    cnf_matrix[n_t-1, t] = evaluate.cmatCell(
+                            evaluate.confmatrix_dx(y_pred[idx], y_dx[idx]))
+            evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx')
+        elif task=='classify':
+            self.model.eval()
+            data_t = datagen.get_timeBatch(data, 0, feat_flag)
+            N = data_t.shape[0]
             num_batches = int(N/batch_size)
             for i in range(num_batches):
                 data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
@@ -218,11 +242,8 @@ class Engine:
             if data_t_batch.shape[0]>1:
                 y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
                 y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
-                        task='dx', as_tensor=True)), 0)            
-            for t in range(6-n_t):
-                idx = np.where(time_t[:len(y_dx)]==t+1) 
-                cnf_matrix[n_t-1, t] = evaluate.cmatCell(
-                        evaluate.confmatrix_dx(y_pred[idx], y_dx[idx]))
-        cnf_matrix = evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx')
-
+                        task='dx', as_tensor=True)), 0)
+            cnf_matrix = evaluate.cmatCell(
+                    evaluate.confmatrix_dx(y_pred, y_dx))
+            evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx')
 

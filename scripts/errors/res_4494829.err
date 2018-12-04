@@ -1,0 +1,21 @@
+/home/suryatejadev/miniconda3/lib/python3.6/site-packages/h5py/__init__.py:36: FutureWarning: Conversion of the second argument of issubdtype from `float` to `np.floating` is deprecated. In future, it will be treated as `np.float64 == np.dtype(float).type`.
+  from ._conv import register_converters as _register_converters
+Traceback (most recent call last):
+  File "main.py", line 69, in <module>
+    a = next(dgt)
+  File "../disease_forecast/datagen.py", line 383, in get_Batch
+    temp = one_batch_one_patient(samples_p[idx],samples[idx],feat_flag)
+  File "../disease_forecast/datagen.py", line 284, in one_batch_one_patient
+    key = dict_int2visit[time_step]
+KeyError: (1, 5)
+
+If you suspect this is an IPython bug, please report it at:
+    https://github.com/ipython/ipython/issues
+or send an email to the mailing list at ipython-dev@python.org
+
+You can print a more detailed traceback right now with "%tb", or use "%debug"
+to interactively debug it.
+
+Extra-detailed tracebacks for bug-reporting purposes can be enabled via:
+    %config Application.verbose_crash=True
+

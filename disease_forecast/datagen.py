@@ -278,7 +278,7 @@ def one_batch_one_patient(p,sample,feat_flag):
                     5:'m36',
                 -1:'none'}
     batch = []
-    if isinstance(sample, list)==False:
+    if isinstance(sample, tuple)==False:
         sample = [sample]
     for time_step in sample:
         key = dict_int2visit[time_step]
@@ -298,7 +298,7 @@ def get_timeBatch(patients, n_t, feat_flag):
     patient_idx = []
     
     for idx,p in enumerate(patients):
-        item = p.trajectories[n_t-1]
+        item = p.trajectories[n_t-1] if n_t !=0 else p.which_visits
         #Check if trajectory exists. If it doesn't, don't concat it.
         if item is not None: 
             traj_len = len(item)
@@ -338,7 +338,7 @@ def get_Batch(patients, B, num_visits, feat_flag):
         'ret': a BxT matrix of Data_Batch objects 
     """
     while 1:
-        n_t = np.random.randint(1, 5) if num_visits==0 else num_visits
+        n_t = np.random.randint(1, 5) if num_visits==-1 else num_visits
         T = n_t+1 #number of visits in traj_{n_t}. 
         
         ret = np.empty((B,T),dtype=object)
@@ -388,6 +388,7 @@ def get_Batch(patients, B, num_visits, feat_flag):
 # as a (BxT-1) paths (CNN) or (BxT-1xF) features (tadpole)
 def get_img_batch(x, as_tensor=False):
     (B, T) = x.shape
+    T = 2 if T==1 else T        # To handle no forecasting pipeline
     img_type = x[0, 0].image_type
     if img_type =='tadpole':
         num_feat = len(x[0, 0].img_features)
@@ -420,6 +421,7 @@ def get_time_batch(x, as_tensor=False):
 # as (BxT-1xF) features
 def get_long_batch(x, as_tensor=False):
     (B, T) = x.shape
+    T = 2 if T==1 else T        # To handle no forecasting pipeline
     num_feat = len(x[0, 0].cogtests)
     feat = np.zeros((B, T-1, num_feat))
     for b in range(B):
@@ -433,6 +435,7 @@ def get_long_batch(x, as_tensor=False):
 # as (BxT-1xF) features
 def get_cov_batch(x, as_tensor=False):
     (B, T) = x.shape
+    T = 2 if T==1 else T        # To handle no forecasting pipeline
     num_feat = len(x[0, 0].covariates)
     feat = np.zeros((B, T-1, num_feat))
     for b in range(B):

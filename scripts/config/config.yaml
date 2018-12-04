@@ -1,5 +1,5 @@
 # Experiment
-exp_id: debug
+exp_id: debug #base_T_1_onehot
 output_dir: &output ../outputs
 
 # Data
@@ -31,11 +31,12 @@ model:
 
 # Train           
 train:
-    num_epochs: 10000
+    num_epochs: 1
     save_model: True
 
 # Test        
 test:
+    task: classify
     data_split: *data_split
     batch_size: *bsize
     feat_flag: *imgType

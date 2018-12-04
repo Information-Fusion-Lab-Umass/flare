@@ -50,11 +50,11 @@ def main(config_file):
     model = engine.Engine(config['model'])
 
     # Train the model
-    #  model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
-    #  print('Train data : ')
-    #  model.test(data_train, exp_dir, 'train', **config['test'])
+    print('Train data : ')
+    model.test(data_train, exp_dir, 'train', **config['test'])
     #  print('Val data : ')
     #  model.test(data_val, exp_dir, 'val', **config['test'])
 
@@ -67,5 +67,3 @@ if __name__=='__main__':
     data, dgt, dgv = main(args.config)
 
     a = next(dgt)
-    print(a.shape)
-   

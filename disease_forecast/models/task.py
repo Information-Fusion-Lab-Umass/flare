@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class ANN_DX(nn.Module):
     def __init__(self):
         super(ANN_DX, self).__init__()
-        self.fc1 = nn.Linear(525, 400)
+        self.fc1 = nn.Linear(520, 400)
         self.fc2 = nn.Linear(400, 200)
         self.fc3 = nn.Linear(200, 100)
         self.fc4 = nn.Linear(100, 3)
