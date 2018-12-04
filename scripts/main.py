@@ -55,8 +55,8 @@ def main(config_file):
     # Test the model
     print('Train data : ')
     model.test(data_train, exp_dir, 'train', **config['test'])
-    #  print('Val data : ')
-    #  model.test(data_val, exp_dir, 'val', **config['test'])
+    print('Val data : ')
+    model.test(data_val, exp_dir, 'val', **config['test'])
 
     return data, datagen_train, datagen_val
 
@@ -66,4 +66,4 @@ if __name__=='__main__':
     args = parser.parse_args()
     data, dgt, dgv = main(args.config)
 
-    a = next(dgt)
+    #  a = next(dgt)
