@@ -17,7 +17,8 @@ datagen:
     feat_flag: &imgType tadpole 
 
 # Model 
-model:     
+model:
+    load_model: ''
     module_image:
         name: tadpole1
     module_temporal: 
@@ -30,7 +31,8 @@ model:
 
 # Train           
 train:
-    num_epochs: 50000
+    num_epochs: 100
+    save_model: True
 
 # Test        
 test:

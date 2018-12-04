@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Tadpole1:
+class Tadpole1(nn.Module):
     def __init__(self):
         super(Tadpole1, self).__init__()
         self.affine = nn.Linear(692, 500)
@@ -14,7 +14,7 @@ class Tadpole1:
         x = F.relu(x)
         return x
 
-class Tadpole2:
+class Tadpole2(nn.Module):
     def __init__(self):
         super(Tadpole2, self).__init__()
         self.affine1 = nn.Linear(692, 200)

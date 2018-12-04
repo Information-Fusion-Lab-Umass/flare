@@ -1,1 +1,0 @@
-]0;IPython: disease_forecasting/scripts

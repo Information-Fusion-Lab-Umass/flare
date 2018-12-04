@@ -22,6 +22,7 @@ def main(config_file):
     exp_dir = os.path.join(config['output_dir'], config['exp_id'])
     utils.create_dirs([exp_dir,
             os.path.join(exp_dir, 'checkpoints'),
+            os.path.join(exp_dir, 'results'),
             os.path.join(exp_dir, 'logs')])
 
     # Copy config file
@@ -46,7 +47,7 @@ def main(config_file):
     print('Datagens Loaded : ', time()-t)
 
     # Define Classification model
-    model = engine.Model(**config['model'])
+    model = engine.Engine(config['model'])
 
     # Train the model
     model.train(datagen_train, datagen_val, exp_dir, **config['train'])
@@ -64,30 +65,4 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
     main(args.config)
-    #  data, dgt, dgv = main(args.config)
-    #  print(len(data))
-    #  for key in data:
-    #      for vis in data[key].cogtests:
-    #          if np.isnan(data[key].cogtests[vis]).any():
-    #              print(key, vis, data[key].cogtests[vis])
-    #  ipdb.set_trace()
-    #
-    #  #tests
-    #  t = test()
-    #  for batch_size in range(1,4):
-    #      traj_type = 1
-    #      ret = datagen.get_Batch(list(data.values()),batch_size,traj_type,'image')
-    #      t.assertEqual(ret.shape,tuple((batch_size,traj_type+1))) #simple shape test
-    #
-    #      traj_type = 2
-    #      if(batch_size > 1): #Testing the case where batch size B > number of trajectories
-    #          t.assertRaises(ValueError, datagen.get_Batch,list(data.values()),batch_size,traj_type,'image')
-    #
-    #  ret = datagen.get_Batch(list(data.values()),3,1,'image')
-    #  for row in ret:
-    #      check = row[0].pid
-    #      for item in row:
-    #          t.assertEqual(check,item.pid) #make sure pid is the same throughout each timestep in a trajectory
-    #
-    #
-    
+   

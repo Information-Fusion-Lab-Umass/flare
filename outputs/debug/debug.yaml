@@ -1,5 +1,5 @@
 # Experiment
-exp_id: debug
+exp_id: debug # base_T_0_onehot
 output_dir: &output ../outputs
 
 # Data
@@ -17,7 +17,8 @@ datagen:
     feat_flag: &imgType tadpole 
 
 # Model 
-model:     
+model:
+    load_model: ../outputs/debug/checkpoints/model.pth
     module_image:
         name: tadpole1
     module_temporal: 
@@ -30,7 +31,8 @@ model:
 
 # Train           
 train:
-    num_epochs: 1000 
+    num_epochs: 5
+    save_model: True
 
 # Test        
 test:
