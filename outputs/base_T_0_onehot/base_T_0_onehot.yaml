@@ -1,5 +1,5 @@
 # Experiment
-exp_id: debug
+exp_id: base_T_0_onehot
 output_dir: &output ../outputs
 
 # Data

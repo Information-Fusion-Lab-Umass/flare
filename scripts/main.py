@@ -50,13 +50,13 @@ def main(config_file):
     model = engine.Engine(config['model'])
 
     # Train the model
-    model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    #  model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
-    print('Train data : ')
-    model.test(data_train, exp_dir, 'train', **config['test'])
-    print('Val data : ')
-    model.test(data_val, exp_dir, 'val', **config['test'])
+    #  print('Train data : ')
+    #  model.test(data_train, exp_dir, 'train', **config['test'])
+    #  print('Val data : ')
+    #  model.test(data_val, exp_dir, 'val', **config['test'])
 
     return data, datagen_train, datagen_val
 
@@ -64,5 +64,8 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
-    main(args.config)
+    data, dgt, dgv = main(args.config)
+
+    a = next(dgt)
+    print(a.shape)
    

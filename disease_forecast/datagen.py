@@ -258,13 +258,6 @@ def get_datagen(data, data_split, batch_size, num_visits, feat_flag):
 
     return (datagen_train, data_train), (datagen_val, data_val)
 
-#  def get_dataiter(data, data_split, batch_size, feat_flag):
-#      # Get Train and Test PIDs
-#      data_items = list(data.values())
-#      data_train = data_items[:int(data_split*len(data_items))]
-#      data_val = data_items[len(data_train):]
-#      print('Train = {}, Val = {}'.format(len(data_train), len(data_val)))
-
 def one_batch_one_patient(p,sample,feat_flag):
     """
     JW:
@@ -285,6 +278,8 @@ def one_batch_one_patient(p,sample,feat_flag):
                     5:'m36',
                 -1:'none'}
     batch = []
+    if isinstance(sample, list)==False:
+        sample = [sample]
     for time_step in sample:
         key = dict_int2visit[time_step]
         batch.append(Data_Batch(time_step,feat_flag,
@@ -358,8 +353,8 @@ def get_Batch(patients, B, num_visits, feat_flag):
         selections = []
         patient_idx = []
         
-        for idx,p in enumerate(patients):
-            item = p.trajectories[n_t-1]
+        for idx, p in enumerate(patients):
+            item = p.trajectories[n_t-1] if n_t !=0 else p.which_visits
             #Check if trajectory exists. If it doesn't, don't concat it.
             if item is not None: 
                 traj_len = len(item)
