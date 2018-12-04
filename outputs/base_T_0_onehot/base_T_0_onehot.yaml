@@ -1,5 +1,5 @@
 # Experiment
-exp_id: base_T_1_onehot
+exp_id: base_T_0_onehot
 output_dir: &output ../outputs
 
 # Data
@@ -13,7 +13,7 @@ data:
 datagen:
     data_split: &data_split 0.8
     batch_size: &bsize 32
-    num_visits: 1
+    num_visits: 0
     feat_flag: &imgType tadpole 
 
 # Model 

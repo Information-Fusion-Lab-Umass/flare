@@ -137,8 +137,8 @@ class Model:
             loss.backward() 
             self.optm.step()
             if epoch%100 == 0:
-                print('Loss at epoch {} = {}, T = {}'.\
-                        format(epoch+1, loss.data.numpy(), x_train_batch.shape[1]))
+                print('Loss at epoch {} = {}, T = {}'. format(epoch+1, \
+                        loss.data.numpy(), x_train_batch.shape[1]))
 
     def test(self, data, exp_dir, data_type, data_split, batch_size, feat_flag):
         cnf_matrix = np.empty((4, 5), dtype=object)
@@ -151,7 +151,8 @@ class Model:
             for i in range(num_batches):
                 data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
                 y_pred_i = self.predict(data_t_batch)
-                y_dx_i = datagen.get_labels(data_t_batch, task='dx', as_tensor=True)
+                y_dx_i = datagen.get_labels(data_t_batch, \
+                        task='dx', as_tensor=True)
                 if i == 0:
                     y_pred, y_dx = y_pred_i, y_dx_i
                 else:
@@ -164,21 +165,13 @@ class Model:
                 y_pred = torch.cat((y_pred, self.predict(data_t_batch)), 0)
                 y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
                         task='dx', as_tensor=True)), 0)            
-            #  print(n_t, min(time_t), max(time_t), y_pred.shape, y_dx.shape, data_t.shape)
+            #  print(n_t, min(time_t), max(time_t), \
+            # y_pred.shape, y_dx.shape, data_t.shape)
             for t in range(6-n_t):
                 idx = np.where(time_t[:len(y_dx)]==t+1) 
                 cnf_matrix[n_t-1, t] = evaluate.cmatCell(
                         evaluate.confmatrix_dx(y_pred[idx], y_dx[idx]))
                 #  print(cnf_matrix[n_t, t].cmat)
         cnf_matrix = evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx')
-
-
-
-
-
-
-
-
-
 
 
