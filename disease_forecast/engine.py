@@ -68,13 +68,14 @@ class Model(nn.Module):
         x_long_data = datagen.get_long_batch(data_batch, as_tensor=True)
         # Get covariate data : x_cov_data: (B, T-1, Dc)
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True)
-        #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
-        #             format(x_time_data.shape, x_img_data.shape, \
-        #             x_long_data.shape, x_cov_data.shape))
+        print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
+                   format(x_time_data.shape, x_img_data.shape, \
+                   x_long_data.shape, x_cov_data.shape))
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
-        x_img_data = x_img_data.view(B*(T-1), 1, -1)
+        x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
+        print(x_img_data.shape)
         x_img_feat = self.model_image(x_img_data)
         x_img_feat = x_img_feat.view(B, T-1, -1)
         #  print(x_img_feat.min(), x_img_feat.max())

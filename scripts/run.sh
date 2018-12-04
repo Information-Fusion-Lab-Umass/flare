@@ -7,9 +7,9 @@
 #
 #SBATCH --ntasks=5
 #SBATCH --time=02-01:00         # Runtime in D-HH:MM
-#SBATCH --mem=20GB
+#SBATCH --mem=50GB
 
-python test_image_load.py
+python main.py
 sleep 1
 exit
 
