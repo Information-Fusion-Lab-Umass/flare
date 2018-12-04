@@ -53,7 +53,7 @@ class Model(nn.Module):
         self.fusion = fusion
 
     def loss(self, y_pred, y):
-        return self.model_task.loss(y_pred, y)
+        return nn.CrossEntropyLoss()(y_pred, y)
         
     def forward(self, data_batch):
         (B, T) = data_batch.shape

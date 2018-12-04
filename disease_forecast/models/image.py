@@ -17,17 +17,17 @@ class Tadpole1(nn.Module):
 class Tadpole2(nn.Module):
     def __init__(self):
         super(Tadpole2, self).__init__()
-        self.affine1 = nn.Linear(692, 200)
-        self.affine2 = nn.Linear(200, 10)
+        self.affine1 = nn.Linear(692, 400)
+        self.affine2 = nn.Linear(400, 200)
  
     def forward(self, x):
         x = x.squeeze()
         x = self.affine1(x)
-        x = nn.BatchNorm1d(x.shape[1])(x)
+        x = nn.BatchNorm1d(400)(x)
         x = F.relu(x)
 
         x = self.affine2(x)
-        x = nn.BatchNorm1d(x.shape[1])(x)
+        x = nn.BatchNorm1d(200)(x)
         x = F.relu(x)
         return x
 
