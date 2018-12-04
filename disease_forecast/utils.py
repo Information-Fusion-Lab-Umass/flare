@@ -2,9 +2,18 @@ import os
 import nibabel as nib
 import numpy as np
 import torch
+import pickle
 
 def load_img(path, view='axial'):
-    return nib.load(path)
+    if(path[-3:] == 'nii'):
+        return nib.load(path)
+    else:
+        try:
+            with open(path,'rb') as f:
+                image = pickle.load(f)
+                return image
+        except IOError:
+            print("image does not exist in path")
 
 def create_dirs(paths):
     for path in paths:

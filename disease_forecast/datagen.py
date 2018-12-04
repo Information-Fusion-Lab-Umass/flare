@@ -6,6 +6,8 @@ import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
+
+from disease_forecast import utils
 #import ipdb
 #from tqdm import tqdm
 
@@ -397,10 +399,10 @@ def get_img_batch(x, as_tensor=False):
             for t in range(T-1):
                 feat[b, t, :] = x[b, t].img_features
     elif img_type == 'cnn3d':
-        feat = np.zeros((B, T-1))
+        feat = np.zeros((B, T-1, 256, 256, 150))
         for b in range(B):
             for t in range(T-1):                
-                feat[b, t] = x[b, t].img_path
+                feat[b, t, :] = utils.load_img(x[b, t].img_path[:-3]+'npz')
     if as_tensor==True:
         feat = torch.from_numpy(feat).float()
     return feat

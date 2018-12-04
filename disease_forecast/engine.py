@@ -19,6 +19,7 @@ class Model(nn.Module):
         model_dict = {
                 'tadpole1': models.Tadpole1,
                 'tadpole2': models.Tadpole2,
+                'cnn3d': models.unet_3D,
                 'long': models.Longitudinal,
                 'cov': models.Covariate,
                 'lstm': models.LSTM,
