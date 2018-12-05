@@ -6,10 +6,11 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import ipdb
-from disease_forecast import models, utils, datagen, evaluate
+from disease_forecast import models, utils, datagen, evaluate, unittest
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+#  torch.backends.cudnn.enabled = False
 
 class Model(nn.Module):
     def __init__(self, module_image, module_temporal, \
@@ -32,50 +33,58 @@ class Model(nn.Module):
         # Load model: image architecture
         model_image_name = module_image.pop('name')
         self.model_image = model_dict[model_image_name](**module_image)
+        #  self.model_image.cuda()
         
         # Load model: longitudinal architecture
         self.model_long = model_dict['long']()
+        #  self.model_long.cuda()
 
         # Load model: covariate architecture
         self.model_cov = model_dict['cov']()
+        #  self.model_cov.cuda()
 
         # Load model: temporal architecture
         model_temporal_name = module_temporal.pop('name')
         self.model_temporal = model_dict[model_temporal_name](**module_temporal)
+        #  self.model_temporal.cuda()
         
         # Load model: forecast architecture
         model_forecast_name = module_forecast.pop('name')
         self.model_forecast = model_dict[model_forecast_name](**module_forecast)
+        #  self.model_forecast.cuda()
 
         # Load model: Task specific architecture
         model_task_name = module_task.pop('name')
         self.model_task = model_dict[model_task_name](**module_task)
+        #  self.model_task.cuda()
 
         self.fusion = fusion
 
     def loss(self, y_pred, y):
         return nn.CrossEntropyLoss()(y_pred, y)
         
-    def forward(self, data_batch):
+    def forward(self, data_batch, on_gpu=False):
         (B, T) = data_batch.shape
         T = 2 if T == 1 else T
         # STEP 2: EXTRACT INPUT VALUES -------------------------------------
         # Get time data : x_time_data = (B, T)
-        x_time_data = datagen.get_time_batch(data_batch, as_tensor=True)
+        x_time_data = datagen.get_time_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
         # Get image data : x_img_data: (B, T-1, Di)
-        x_img_data = datagen.get_img_batch(data_batch, as_tensor=True) 
+        x_img_data = datagen.get_img_batch(data_batch, as_tensor=True, on_gpu=on_gpu) 
         # Get longitudinal data : x_long_data: (B, T-1, Dl)  
-        x_long_data = datagen.get_long_batch(data_batch, as_tensor=True)
+        x_long_data = datagen.get_long_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
         # Get covariate data : x_cov_data: (B, T-1, Dc)
-        x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True)
-        print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
-                   format(x_time_data.shape, x_img_data.shape, \
-                   x_long_data.shape, x_cov_data.shape))
+        x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
+        #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
+        #             format(x_time_data.shape, x_img_data.shape, \
+        #             x_long_data.shape, x_cov_data.shape))
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
         x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
-        print(x_img_data.shape)
+        if len(x_img_data.shape) == 5:
+            x_img_data = x_img_data.permute(0,1,4,2,3)
+        #  print(x_img_data.shape)
         x_img_feat = self.model_image(x_img_data)
         x_img_feat = x_img_feat.view(B, T-1, -1)
         #  print(x_img_feat.min(), x_img_feat.max())
@@ -128,15 +137,17 @@ class Engine:
         if load_model != '':
             self.model.load_state_dict(torch.load(load_model))
 
+        #  self.model.cuda()
+        self.model_params = {
+                'image': list(self.model.model_image.parameters()),
+                'long': list(self.model.model_long.parameters()),
+                'cov': list(self.model.model_cov.parameters()),
+                'temporal': list(self.model.model_temporal.parameters()),
+                'task': list(self.model.model_task.parameters())
+                }
+
         # Initialize the optimizer
-        self.optm = torch.optim.Adam(
-                #  list(self.model.model_image.parameters()) + \
-                list(self.model.model_long.parameters()) + \
-                list(self.model.model_cov.parameters()) + \
-                list(self.model.model_temporal.parameters()) + \
-                #  list(self.model.model_forecast.parameters()) + \
-                list(self.model.model_task.parameters())
-                )
+        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []))
 
     def train(self, datagen_train, datagen_val, exp_dir, \
             num_epochs, save_model=False):
@@ -148,6 +159,12 @@ class Engine:
         for epoch in range(num_epochs):
             self.optm.zero_grad() 
             self.model.train()
+            # Clone params for module-wise unit test
+            params = {}
+            for key in self.model_params:
+                p = self.model_params[key]
+                params[key] = [p[i].clone() for i in range(len(p))]
+            #  params = self.model_params
             
             # Get Train data loss
             x_train_batch = next(datagen_train)
@@ -158,6 +175,9 @@ class Engine:
             # Train the model
             obj.backward() 
             self.optm.step()
+
+            # Unittest
+            unittest.change_in_params(params, self.model_params)
 
             # Get validation loss
             self.model.eval()

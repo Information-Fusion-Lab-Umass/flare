@@ -6,7 +6,6 @@ import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
-
 from disease_forecast import utils
 #import ipdb
 #from tqdm import tqdm
@@ -388,7 +387,7 @@ def get_Batch(patients, B, num_visits, feat_flag):
 
 # Given a (BxT) array of DataBatch objects, return the image paths/features
 # as a (BxT-1) paths (CNN) or (BxT-1xF) features (tadpole)
-def get_img_batch(x, as_tensor=False):
+def get_img_batch(x, as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     T = 2 if T==1 else T        # To handle no forecasting pipeline
     img_type = x[0, 0].image_type
@@ -405,11 +404,13 @@ def get_img_batch(x, as_tensor=False):
                 feat[b, t, :] = utils.load_img(x[b, t].img_path[:-3]+'npz')
     if as_tensor==True:
         feat = torch.from_numpy(feat).float()
+    if on_gpu:
+        feat = feat.cuda()
     return feat
 
 # Given a (BxT) array of DataBatch objects, return the time indices
 # as (BxT) matrix
-def get_time_batch(x, as_tensor=False):
+def get_time_batch(x, as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     timeidx = np.zeros((B, T))
     for b in range(B):
@@ -417,11 +418,13 @@ def get_time_batch(x, as_tensor=False):
             timeidx[b, t] = x[b, t].time_step
     if as_tensor==True:
         timeidx = torch.from_numpy(timeidx).float()
+    if on_gpu:
+        timeidx = timeidx.cuda()
     return timeidx
 
 # Given a (BxT) array of DataBatch objects, return the cognitive tests
 # as (BxT-1xF) features
-def get_long_batch(x, as_tensor=False):
+def get_long_batch(x, as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     T = 2 if T==1 else T        # To handle no forecasting pipeline
     num_feat = len(x[0, 0].cogtests)
@@ -431,11 +434,13 @@ def get_long_batch(x, as_tensor=False):
             feat[b, t, :] = x[b, t].cogtests
     if as_tensor==True:
         feat = torch.from_numpy(feat).float()           
+    if on_gpu:
+        feat = feat.cuda()
     return feat
 
 # Given a (BxT) array of DataBatch objects, return the covariates
 # as (BxT-1xF) features
-def get_cov_batch(x, as_tensor=False):
+def get_cov_batch(x, as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     T = 2 if T==1 else T        # To handle no forecasting pipeline
     num_feat = len(x[0, 0].covariates)
@@ -445,16 +450,20 @@ def get_cov_batch(x, as_tensor=False):
             feat[b, t, :] = x[b, t].covariates
     if as_tensor==True:
         feat = torch.from_numpy(feat).float()           
+    if on_gpu:
+        feat = feat.cuda()
     return feat
 
 # Given a (BxT) array of DataBatch objects and the task name, 
 # return the labels as (BxF) tensor
-def get_labels(x, task='dx', as_tensor=False):
+def get_labels(x, task='dx', as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     if task=='dx':
         labels = np.array([x[b, -1].metrics[0] for b in range(B)])
         if as_tensor==True:
             labels = torch.from_numpy(labels).long() 
+        if on_gpu:
+            labels = labels.cuda()
     return labels
 
 
