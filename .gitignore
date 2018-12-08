@@ -4,3 +4,6 @@ slice_data/
 .ipynb_checkpoints/
 data_all/
 *.pyc
+*.pth
+scripts/errors/
+scripts/run_output/

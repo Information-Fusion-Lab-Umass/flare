@@ -5,14 +5,15 @@ import torch.nn.functional as F
 from disease_forecast.models.unet_utils import * 
 
 class Tadpole1(nn.Module):
-    def __init__(self):
+    def __init__(self, num_input, num_output):
         super(Tadpole1, self).__init__()
-        self.affine = nn.Linear(692, 500)
+        self.affine = nn.Linear(num_input, num_output)
+        self.bn = nn.BatchNorm1d(num_output)
         
     def forward(self, x):
         x = x.squeeze()
         x = self.affine(x)
-        x = nn.BatchNorm1d(x.shape[1])(x)
+        x = self.bn(x)
         x = F.relu(x)
         return x
 

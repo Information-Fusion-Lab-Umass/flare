@@ -1,5 +1,5 @@
 # Experiment
-exp_id: debug # base_T_1_onehot_2 #base_T_1_onehot
+exp_id: debug #base_T_1_onehot
 output_dir: &output ../outputs
 
 # Data
@@ -12,8 +12,8 @@ data:
 
 datagen:
     data_split: &data_split 0.8
-    batch_size: &bsize 64
-    num_visits: 1
+    batch_size: &bsize 32
+    num_visits: &T 2
     feat_flag: &imgType tadpole 
 
 # Model 
@@ -21,20 +21,25 @@ model:
     load_model: ''
     module_image:
         name: tadpole1
+        num_input: 692
+        num_output: 500
     module_temporal: 
         name: rnn
+        num_input: 520
+        num_timesteps: *T         
     module_forecast:
         name: append_time
     module_task:
         name: dx
+        num_input: 525
     fusion: latefuse
 
-# Train           
+# Train 
 train:
-    num_epochs: 5
+    num_epochs: 1
     save_model: True
 
-# Test        
+# Test
 test:
     task: forecast
     data_split: *data_split
