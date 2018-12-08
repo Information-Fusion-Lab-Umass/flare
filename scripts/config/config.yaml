@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_allT_2k #base_T_1_onehot
+exp_id: forecast_allT_5k #base_T_1_onehot
 output_dir: &output ../outputs
 
 # Data
@@ -36,7 +36,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 2000
+    num_epochs: 5000
     save_model: True
 
 # Test
