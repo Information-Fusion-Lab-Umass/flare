@@ -61,8 +61,9 @@ class Model(nn.Module):
 
         self.fusion = fusion
 
-    def loss(self, y_pred, y):
-        return nn.CrossEntropyLoss()(y_pred, y)
+    def loss(self, y_pred, y, mse):
+        celoss = nn.CrossEntropyLoss()(y_pred, y) 
+        return celoss + mse
         
     def forward(self, data_batch, on_gpu=False):
         (B, T) = data_batch.shape
@@ -123,15 +124,16 @@ class Model(nn.Module):
         # STEP 6: MODULE 3: FORECASTING ------------------------------------
         # x_forecast: (B, F_f)
         x_forecast = self.model_forecast(x_temp, x_time_data)
-        mse_forecast = nn.MSELoss(reduce=True)(x_forecast, x_out)
-        print(x_out.min(), x_out.max(), x_forecast.min(), x_forecast.max(), mse_forecast)
-        ipdb.set_trace()
+        ndims = x_out.shape[0]*x_out.shape[1]
+        mse_forecast = nn.MSELoss()(x_forecast, x_out)/ndims
+        #  print(x_out.min(), x_out.max(), x_forecast.min(), x_forecast.max(), mse_forecast)
+        #  ipdb.set_trace()
         #  print('Forecast dims = ', x_forecast.shape)
  
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
         ypred = self.model_task(x_forecast)
-        return ypred
+        return ypred, mse_forecast
 
 class Engine:
     def __init__(self, model_config):
@@ -175,8 +177,8 @@ class Engine:
             # Get Train data loss
             x_train_batch = next(datagen_train)
             y_dx = datagen.get_labels(x_train_batch, task='dx', as_tensor=True)
-            y_pred = self.model(x_train_batch)
-            obj = self.model.loss(y_pred, y_dx)
+            y_pred, mse_forecast = self.model(x_train_batch)
+            obj = self.model.loss(y_pred, y_dx, mse_forecast)
 
             # Train the model
             obj.backward() 
@@ -189,8 +191,8 @@ class Engine:
             self.model.eval()
             x_val_batch = next(datagen_val)
             y_val_dx = datagen.get_labels(x_val_batch, task='dx', as_tensor=True)
-            y_val_pred = self.model.forward(x_val_batch)
-            loss_val = self.model.loss(y_val_pred, y_val_dx)
+            y_val_pred, mse_val = self.model.forward(x_val_batch)
+            loss_val = self.model.loss(y_val_pred, y_val_dx, mse_val)
 
             # print loss values
             loss_vals[epoch, :] = [
@@ -233,7 +235,7 @@ class Engine:
                 num_batches = int(N/batch_size)
                 for i in range(num_batches):
                     data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
-                    y_pred_i = self.model(data_t_batch)
+                    y_pred_i, _ = self.model(data_t_batch)
                     y_dx_i = datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)
                     if i == 0:
@@ -243,7 +245,8 @@ class Engine:
                         y_dx = torch.cat((y_dx, y_dx_i), 0) 
                 data_t_batch = data_t[num_batches*batch_size:]                        
                 if data_t_batch.shape[0]>1:
-                    y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
+                    y_pred_i, _ = self.model(data_t_batch)
+                    y_pred = torch.cat((y_pred, y_pred_i), 0)
                     y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)), 0)            
                 for t in range(6-n_t):
