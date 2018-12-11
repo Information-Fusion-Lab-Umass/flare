@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import ipdb
 
 class RNN(nn.Module):
     def __init__(self, num_input, num_timesteps):
@@ -8,7 +9,7 @@ class RNN(nn.Module):
         self.T = num_timesteps
         self.rnn = nn.RNN(input_size = num_input,
                 hidden_size = num_input, 
-                num_layers = 1,
+                num_layers = 2,
                 batch_first=True,
                 dropout=0.2, 
                 bidirectional=False)
@@ -25,9 +26,9 @@ class LSTM(nn.Module):
         self.T = num_timesteps
         self.lstm = nn.LSTM(input_size = num_input,
                 hidden_size = num_input, 
-                num_layers = 1,
+                num_layers = 3,
                 batch_first=True,
-                dropout=0.2, 
+                dropout=0.1, 
                 bidirectional=False)
         
     def forward(self, x): 

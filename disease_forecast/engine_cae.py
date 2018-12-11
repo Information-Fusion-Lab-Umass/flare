@@ -76,9 +76,9 @@ class Model(nn.Module):
         x_long_data = datagen.get_long_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
         # Get covariate data : x_cov_data: (B, T, Dc)
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
-                   format(x_time_data.shape, x_img_data.shape, \
-                   x_long_data.shape, x_cov_data.shape))
+        #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
+        #             format(x_time_data.shape, x_img_data.shape, \
+        #             x_long_data.shape, x_cov_data.shape))
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
@@ -89,38 +89,43 @@ class Model(nn.Module):
         x_img_feat = self.model_image(x_img_data)
         x_img_feat = x_img_feat.view(B, T, -1)
         #  print(x_img_feat.min(), x_img_feat.max())
-        print('Image features dim = ', x_img_feat.shape)
+        #  print('Image features dim = ', x_img_feat.shape)
  
         # Get longitudinal features : x_long_feat: (B, T-1, Fl)
         x_long_data = x_long_data.view(B*T, -1)
         x_long_feat = self.model_long(x_long_data)
         x_long_feat = x_long_feat.view(B, T, -1)
         #  print(x_long_feat.min(), x_long_feat.max())
-        print('Longitudinal features dim = ', x_long_feat.shape)
+        #  print('Longitudinal features dim = ', x_long_feat.shape)
  
         # Get Covariate features : x_cov_feat: (B, T-1, Fc)
         x_cov_data = x_cov_data.view(B*T, -1)
         x_cov_feat = self.model_cov(x_cov_data)
         x_cov_feat = x_cov_feat.view(B, T, -1)
         #  print(x_cov_feat.min(), x_cov_feat.max())
-        print('Covariate features dim = ', x_cov_feat.shape)
+        #  print('Covariate features dim = ', x_cov_feat.shape)
  
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
         # Fuse the features
         # x_feat: (B, T-1, F_i+F_l+F_c) = (B, T-1, F)
         if self.fusion=='latefuse':
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
-        print('Feature fusion dims = ', x_feat.shape)
+        #  print('Feature fusion dims = ', x_feat.shape)
+        x_out = x_feat[:, -1, :]
+        #  print(x_out.shape)
         #  print(x_feat.min(), x_feat.max())
  
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
         x_temp = self.model_temporal(x_feat[:, :-1, :])
-        print('Temporal dims = ', x_temp.shape)
+        #  print('Temporal dims = ', x_temp.shape)
  
         # STEP 6: MODULE 3: FORECASTING ------------------------------------
         # x_forecast: (B, F_f)
         x_forecast = self.model_forecast(x_temp, x_time_data)
+        mse_forecast = nn.MSELoss(reduce=True)(x_forecast, x_out)
+        print(x_out.min(), x_out.max(), x_forecast.min(), x_forecast.max(), mse_forecast)
+        ipdb.set_trace()
         #  print('Forecast dims = ', x_forecast.shape)
  
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------

@@ -53,6 +53,6 @@ def confmatrix_dx(ypred, y):
     y = y.data.numpy()
 
     cmat = confusion_matrix(y, y_pred, labels=[0,1,2])
-    cmat = cmat/np.sum(cmat, axis=1)[:,np.newaxis]
+    cmat = cmat/(np.sum(cmat, axis=1)[:,np.newaxis]+0.001)
     return cmat
 
