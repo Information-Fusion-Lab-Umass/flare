@@ -7,14 +7,18 @@ from disease_forecast.models.unet_utils import *
 class Tadpole1(nn.Module):
     def __init__(self, num_input, num_output):
         super(Tadpole1, self).__init__()
-        self.affine = nn.Linear(num_input, num_output)
-        self.bn = nn.BatchNorm1d(num_output)
-        
+        self.aff1 = nn.Linear(num_input, num_output)
+        self.bn1 = nn.BatchNorm1d(num_output)
+        self.dp1 = nn.Dropout(p=0.1)
+
+        self.aff2 = nn.Linear(num_output, num_output)
+        self.bn2 = nn.BatchNorm1d(num_output)       
+        self.dp2 = nn.Dropout(p=0.5)
+
     def forward(self, x):
         x = x.squeeze()
-        x = self.affine(x)
-        x = self.bn(x)
-        x = F.relu(x)
+        x = self.dp1(self.bn1(F.relu(self.aff1(x))))
+        x = self.dp2(self.bn2(F.relu(self.aff2(x))))
         return x
 
 class Tadpole2(nn.Module):

@@ -31,7 +31,7 @@ class ANN_DX(nn.Module):
         x = layer(x, self.fc2, self.dp2, self.bn2)
         x = layer(x, self.fc3, self.dp2, self.bn3)
         x = layer(x, self.fc4, self.dp1, self.bn4)
-        x = F.relu(self.fc5(x))
+        x = self.fc5(x)
 
         return x
 

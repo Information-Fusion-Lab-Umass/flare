@@ -9,7 +9,7 @@
 #SBATCH --time=02-01:00         # Runtime in D-HH:MM
 #SBATCH --mem=30GB
 
-python main.py --config=config/config_tadpole.yaml
+python main.py --config=config/config_tadpole_cae.yaml
 sleep 1
 exit
 

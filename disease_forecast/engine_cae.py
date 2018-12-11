@@ -27,6 +27,7 @@ class Model(nn.Module):
                 'rnn': models.RNN,
                 'append_time' : models.AppendTime,
                 'multiply_time' : models.MultiplyTime,
+                'autoenc' : models.AutoEncoder,
                 'dx': models.ANN_DX 
                 }
         
@@ -75,9 +76,9 @@ class Model(nn.Module):
         x_long_data = datagen.get_long_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
         # Get covariate data : x_cov_data: (B, T, Dc)
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
-        #             format(x_time_data.shape, x_img_data.shape, \
-        #             x_long_data.shape, x_cov_data.shape))
+        print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
+                   format(x_time_data.shape, x_img_data.shape, \
+                   x_long_data.shape, x_cov_data.shape))
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
@@ -88,21 +89,21 @@ class Model(nn.Module):
         x_img_feat = self.model_image(x_img_data)
         x_img_feat = x_img_feat.view(B, T, -1)
         #  print(x_img_feat.min(), x_img_feat.max())
-        #  print('Image features dim = ', x_img_feat.shape)
+        print('Image features dim = ', x_img_feat.shape)
  
         # Get longitudinal features : x_long_feat: (B, T-1, Fl)
         x_long_data = x_long_data.view(B*T, -1)
         x_long_feat = self.model_long(x_long_data)
         x_long_feat = x_long_feat.view(B, T, -1)
         #  print(x_long_feat.min(), x_long_feat.max())
-        #  print('Longitudinal features dim = ', x_long_feat.shape)
+        print('Longitudinal features dim = ', x_long_feat.shape)
  
         # Get Covariate features : x_cov_feat: (B, T-1, Fc)
         x_cov_data = x_cov_data.view(B*T, -1)
         x_cov_feat = self.model_cov(x_cov_data)
         x_cov_feat = x_cov_feat.view(B, T, -1)
         #  print(x_cov_feat.min(), x_cov_feat.max())
-        #  print('Covariate features dim = ', x_cov_feat.shape)
+        print('Covariate features dim = ', x_cov_feat.shape)
  
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
         # Fuse the features

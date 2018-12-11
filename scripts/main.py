@@ -10,7 +10,7 @@ import ipdb
 from time import time
 import pickle
 import numpy as np
-from disease_forecast import datagen_tadpole as datagen, utils, engine
+from disease_forecast import datagen_tadpole_cae as datagen, utils, engine_cae as engine
 
 def main(config_file):
     
