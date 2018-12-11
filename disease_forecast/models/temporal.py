@@ -6,7 +6,7 @@ class RNN(nn.Module):
     def __init__(self, num_input, num_timesteps):
         super(RNN, self).__init__()
         self.T = num_timesteps
-        self.lstm = nn.RNN(input_size = num_input,
+        self.rnn = nn.RNN(input_size = num_input,
                 hidden_size = num_input, 
                 num_layers = 1,
                 batch_first=True,
@@ -16,7 +16,7 @@ class RNN(nn.Module):
     def forward(self, x): 
         if self.T==1:
             return x[:, 0, :] 
-        x = self.lstm(x)[0]
+        x = self.rnn(x)[0]
         return x[:, -1, :]
 
 class LSTM(nn.Module):

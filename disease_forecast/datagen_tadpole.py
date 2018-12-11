@@ -8,15 +8,15 @@ from itertools import combinations as comb
 from itertools import chain
 from disease_forecast import utils
 import ipdb
-#from tqdm import tqdm
+from tqdm import tqdm
 
 class Data_Batch: #BxT matrix Data_Batch objects is one whole batch
-    def __init__(self, time_step, feat_flag, pid, img_path, cogtests, 
+    def __init__(self, time_step, feat_flag, pid, cogtests, 
             covariates, metrics, img_features):
         self.time_step = time_step
         self.image_type = feat_flag #'tadpole' or 'cnn3d' 
         self.pid = pid #pid of patient that features are taken from
-        self.img_path = img_path #Path of image
+        #  self.img_path = img_path #Path of image
         self.cogtests = cogtests #Cognitive tests score
         self.covariates = covariates
         self.metrics = metrics #1x3 output of multitask prediction, for time_step = T
@@ -41,9 +41,16 @@ class Data:
         
         temp_visits = []
         temp_viscodes = ['none']
-        for fmeta, fimg in paths:
+        for path in paths:        # path is viscode
             # Extract visit code from meta file         
-            viscode = self.get_viscode(fmeta)           
+            viscode = path # self.get_viscode(fmeta)           
+
+            # Store image features
+            feat_viscode = feat.loc[(feat.PTID==pid) & (feat.VISCODE==viscode)]
+            imfeat = self.get_img_features(feat_viscode)
+            if sum(imfeat)!=sum(imfeat):
+                continue
+
             if viscode not in temp_viscodes:
                 temp_viscodes.append(viscode)
                 self.num_visits += 1
@@ -51,7 +58,7 @@ class Data:
                 temp_visits.append(viscode)
       
                 # Store image path with viscode as key
-                self.path_imgs[viscode] = fimg
+                #  self.path_imgs[viscode] = fimg
 
                 # Store cognitive test data with viscode as key
                 feat_viscode = feat.loc[(feat.PTID==pid) & (feat.VISCODE==viscode)]
@@ -73,6 +80,7 @@ class Data:
         
         #Store trajectory values. Set to get_trajectories_cont() until we find a way to impute missing data
         self.trajectories = self.get_trajectories_cont()
+
 
     def get_trajectories(self):
         """
@@ -125,7 +133,7 @@ class Data:
               'm12':2,
               'm18':3,
               'm24':4,
-              'm36':5,
+              'm30':5,
               'none':-1}
         for key in visits:
             which_visits.append(dict_visit2int[key])
@@ -177,10 +185,11 @@ class Data:
         dx = feat['DX'].values[0]
         if dx!=dx:
             dx = 'NL'
-        return [dict_dx[dx],
-                float(feat['ADAS13'].values[0]),
-                float(feat['Ventricles'].values[0])
-                ]
+        return [dict_dx[dx], 0, 0]
+        #  return [dict_dx[dx],
+        #          float(feat['ADAS13'].values[0]),
+        #          float(feat['Ventricles'].values[0])
+                #  ]
 
     def get_covariates(self, feat):
         dict_gender = {'male':0, 'female':1}
@@ -208,44 +217,27 @@ class Data:
         key = [x for x in vals[0].iter('visitIdentifier')][0].text
         return dict_visit[key]
 
-def get_data(path_meta, path_images, path_feat, min_visits=1): 
+def get_data_tadpole(path_meta, path_images, path_feat, min_visits=1): 
 
     data_feat = pd.read_csv(path_feat, dtype=object)
-    
-    id_list = next(os.walk(path_meta))[1]
-
+    #  print(len(data_feat))
+    id_list = list(set(data_feat.PTID.values))
     data = {}
-    # Iterate over patient folders
-    for pid in id_list:
-        # List of identifier files of patient
-        pmeta = glob(os.path.join(path_meta, \
-                pid+'/**/*.xml'), recursive=True)
-        p_paths = []
-        # Iterate over identifier files
-        for f in pmeta:
-            # Get image path
-            for idx_imgdir in range(1, 11):        
-                f_img = glob(os.path.dirname(f).\
-                        replace(path_meta, path_images+\
-                        '/'+str(idx_imgdir)+'/ADNI')+'/*.nii')
-                if len(f_img)==1:
-                    break
-            if len(f_img)==1:
-                f_img = f_img[0]
-                # Get metadata path
-                f_basename = os.path.basename(f_img)[:-3]
-                f_meta = f_basename.split('_')
-                idx_mr, idx_br = f_meta.index('MR'), f_meta.index('Br')
-                f_meta = f_meta[:idx_mr] + \
-                        f_meta[idx_mr+1:idx_br] + f_meta[idx_br+2:]
-                f_meta = os.path.join(path_meta, '_'.join(f_meta)+'xml')
-                p_paths.append((f_meta, f_img))
-        # Get all data for the pid
+    dict_visit2int = {'bl':0,
+          'm06':1,
+          'm12':2,
+          'm18':3,
+          'm24':4,
+          'm30':5,
+          'none':-1}
+    print(len(id_list))
+    for pid in tqdm(id_list):
+        p_paths = data_feat[data_feat.PTID==pid]['VISCODE'].values
+        p_paths = list(set(p_paths).intersection(set(dict_visit2int.keys())))
         if len(p_paths)>=min_visits:
             data[pid] = Data(pid, p_paths, data_feat[data_feat.PTID==pid])
-
-    return data 
-
+    return data
+            
 def get_datagen(data, data_split, batch_size, num_visits, feat_flag):
     # Get Train and Test PIDs
     data_items = list(data.values())
@@ -276,7 +268,7 @@ def one_batch_one_patient(p,sample,feat_flag):
                     2:'m12',
                     3:'m18',
                     4:'m24',
-                    5:'m36',
+                    5:'m30',
                 -1:'none'}
     batch = []
     if isinstance(sample, tuple)==False:
@@ -285,7 +277,7 @@ def one_batch_one_patient(p,sample,feat_flag):
         key = dict_int2visit[time_step]
         batch.append(Data_Batch(time_step,feat_flag,
                         p.pid,
-                        p.path_imgs[key],
+                        #  p.path_imgs[key],
                         p.cogtests[key],
                         p.covariates,
                         p.metrics[key],
@@ -474,3 +466,5 @@ def get_labels(x, task='dx', as_tensor=False, on_gpu=False):
 
 
 
+
+ 

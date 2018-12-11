@@ -6,7 +6,7 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import ipdb
-from disease_forecast import models, utils, datagen_tadpole as datagen, evaluate, unittest
+from disease_forecast import models, utils, datagen_tadpole_cae as datagen, evaluate, unittest
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -69,44 +69,39 @@ class Model(nn.Module):
         # STEP 2: EXTRACT INPUT VALUES -------------------------------------
         # Get time data : x_time_data = (B, T)
         x_time_data = datagen.get_time_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        # Get image data : x_img_data: (B, T-1, Di)
+        # Get image data : x_img_data: (B, T, Di)
         x_img_data = datagen.get_img_batch(data_batch, as_tensor=True, on_gpu=on_gpu) 
-        # Get longitudinal data : x_long_data: (B, T-1, Dl)  
+        # Get longitudinal data : x_long_data: (B, T, Dl)  
         x_long_data = datagen.get_long_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        # Get covariate data : x_cov_data: (B, T-1, Dc)
+        # Get covariate data : x_cov_data: (B, T, Dc)
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        #  print(torch.sum(x_img_data),torch.sum(x_long_data),torch.sum(x_cov_data))
         #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
         #             format(x_time_data.shape, x_img_data.shape, \
         #             x_long_data.shape, x_cov_data.shape))
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
-        x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
+        x_img_data = x_img_data.view((B*T, 1) + x_img_data.shape[2:])
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         #  print(x_img_data.shape)
         x_img_feat = self.model_image(x_img_data)
-        x_img_feat = x_img_feat.view(B, T-1, -1)
-        #  if torch.sum(x_img_feat)!= torch.sum(x_img_feat):
-        #      print('img ', torch.sum(x_img_feat))
-        #  print('img ',x_img_feat.min(), x_img_feat.max())
+        x_img_feat = x_img_feat.view(B, T, -1)
+        #  print(x_img_feat.min(), x_img_feat.max())
         #  print('Image features dim = ', x_img_feat.shape)
  
         # Get longitudinal features : x_long_feat: (B, T-1, Fl)
-        x_long_data = x_long_data.view(B*(T-1), -1)
+        x_long_data = x_long_data.view(B*T, -1)
         x_long_feat = self.model_long(x_long_data)
-        x_long_feat = x_long_feat.view(B, T-1, -1)
-        #  if x_long_feat.max()!=x_long_feat.max():
-        #      print('long ', x_long_feat.min(), x_long_feat.max())
+        x_long_feat = x_long_feat.view(B, T, -1)
+        #  print(x_long_feat.min(), x_long_feat.max())
         #  print('Longitudinal features dim = ', x_long_feat.shape)
  
         # Get Covariate features : x_cov_feat: (B, T-1, Fc)
-        x_cov_data = x_cov_data.view(B*(T-1), -1)
+        x_cov_data = x_cov_data.view(B*T, -1)
         x_cov_feat = self.model_cov(x_cov_data)
-        x_cov_feat = x_cov_feat.view(B, T-1, -1)
-        #  if x_cov_feat.max()!=x_cov_feat.max():
-        #      print('cov ', x_cov_feat.min(), x_cov_feat.max())
+        x_cov_feat = x_cov_feat.view(B, T, -1)
+        #  print(x_cov_feat.min(), x_cov_feat.max())
         #  print('Covariate features dim = ', x_cov_feat.shape)
  
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
@@ -114,13 +109,13 @@ class Model(nn.Module):
         # x_feat: (B, T-1, F_i+F_l+F_c) = (B, T-1, F)
         if self.fusion=='latefuse':
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
-        #  print('Feature fusion dims = ', x_feat.shape)
+        print('Feature fusion dims = ', x_feat.shape)
         #  print(x_feat.min(), x_feat.max())
  
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        x_temp = self.model_temporal(x_feat)
-        #  print('Temporal dims = ', x_temp.shape)
+        x_temp = self.model_temporal(x_feat[:, :-1, :])
+        print('Temporal dims = ', x_temp.shape)
  
         # STEP 6: MODULE 3: FORECASTING ------------------------------------
         # x_forecast: (B, F_f)
@@ -176,7 +171,6 @@ class Engine:
             y_dx = datagen.get_labels(x_train_batch, task='dx', as_tensor=True)
             y_pred = self.model(x_train_batch)
             obj = self.model.loss(y_pred, y_dx)
-            #  print(obj)
 
             # Train the model
             obj.backward() 

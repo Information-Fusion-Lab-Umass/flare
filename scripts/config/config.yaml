@@ -1,10 +1,10 @@
 # Experiment
-exp_id: forecast_allT_5k #base_T_1_onehot
+exp_id: debug #base_T_1_onehot
 output_dir: &output ../outputs
 
 # Data
 data:
-    path_load: ../data/data_nonan.pickle
+    path_load: ../data/data_nonan1.pickle
     path_meta: ../data/metadata
     path_images: ../../../ADNI_data/data
     path_feat: ../data/features.csv
@@ -26,7 +26,7 @@ model:
     module_temporal: 
         name: lstm
         num_input: 520
-        num_timesteps: *T         
+        num_timesteps: *T 
     module_forecast:
         name: append_time
     module_task:

@@ -1,10 +1,10 @@
 # Experiment
-exp_id: debug #base_T_1_onehot
+exp_id: tadpole_1 #base_T_1_onehot
 output_dir: &output ../outputs
 
 # Data
 data:
-    path_load: ../data/data_nonan1.pickle
+    path_load: ../data/data_tadpole_nonan.pickle
     path_meta: ../data/metadata
     path_images: ../../../ADNI_data/data
     path_feat: ../data/features.csv
@@ -36,7 +36,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 5000
+    num_epochs: 1000
     save_model: True
 
 # Test

@@ -10,7 +10,7 @@ import ipdb
 from time import time
 import pickle
 import numpy as np
-from disease_forecast import datagen, utils, engine
+from disease_forecast import datagen_tadpole as datagen, utils, engine
 
 def main(config_file):
     
@@ -35,10 +35,11 @@ def main(config_file):
         with open(path_load, 'rb') as f:
             data = pickle.load(f)
     else:
-        data = datagen.get_data(**config['data'])
+        data = datagen.get_data_tadpole(**config['data'])
         with open(path_load, 'wb') as f:
             pickle.dump(data, f)
     print('Data Loaded : ', time()-t)
+    #  ipdb.set_trace()
 
     # Datagens
     t = time()
