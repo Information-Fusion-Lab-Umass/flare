@@ -165,27 +165,29 @@ class Data:
         return img_feat
 
     def get_metrics(self, feat):
+#        dict_dx = {'NL':0,
+#                   'MCI to NL':0,
+#                   'NL to MCI':1,
+#                   'Dementia to MCI':1,
+#                   'MCI':1,
+#                   'MCI to Dementia':2,
+#                   'Dementia':2,
+#                   'NL to Dementia':2
+#                   }
         dict_dx = {'NL':0,
                    'MCI to NL':0,
-                   'NL to MCI':1,
-                   'Dementia to MCI':1,
-                   'MCI':1,
-                   'MCI to Dementia':2,
-                   'Dementia':2,
-                   'NL to Dementia':2
+                   'NL to MCI':0,
+                   'Dementia to MCI':0,
+                   'MCI':0,
+                   'MCI to Dementia':1,
+                   'Dementia':1,
+                   'NL to Dementia':1
                    }
-#       dict_dx = {'NL':1,
-#                   'MCI to NL':2,
-#                   'NL to MCI':3,
-#                   'Dementia to MCI':4,
-#                   'MCI':5,
-#                   'MCI to Dementia':6,
-#                   'Dementia':7,
-#                   'NL to Dementia':8}
         dx = feat['DX'].values[0]
         if dx!=dx:
             dx = 'NL'
         return [dict_dx[dx], 0, 0]
+
         #  return [dict_dx[dx],
         #          float(feat['ADAS13'].values[0]),
         #          float(feat['Ventricles'].values[0])
