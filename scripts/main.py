@@ -10,7 +10,7 @@ import ipdb
 from time import time
 import pickle
 import numpy as np
-from src import datagen_tadpole_cae as datagen, utils, engine_cae as engine
+from src import datagen_tadpole as datagen, utils, engine
 
 def main(config_file):
     
@@ -39,7 +39,8 @@ def main(config_file):
         with open(path_load, 'wb') as f:
             pickle.dump(data, f)
     print('Data Loaded : ', time()-t)
-    #  ipdb.set_trace()
+    print('Basic Data Stats:')
+    print('Number of patients = ', len(data))
 
     # Datagens
     t = time()
@@ -51,13 +52,17 @@ def main(config_file):
     model = engine.Engine(config['model'])
 
     # Train the model
-    model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    if config['train_model']:
+        print('Training the model ...')
+        model.train(datagen_train, datagen_val, exp_dir, **config['train'])
 
     # Test the model
-    print('Train data : ')
-    model.test(data_train, exp_dir, 'train', **config['test'])
-    print('Val data : ')
-    model.test(data_val, exp_dir, 'val', **config['test'])
+    if config['test_model']:
+        print('Testing the model ...')
+        print('Train data : ')
+        model.test(data_train, exp_dir, 'train', **config['test'])
+        print('Val data : ')
+        model.test(data_val, exp_dir, 'val', **config['test'])
 
     return data, datagen_train, datagen_val
 
@@ -66,5 +71,3 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='config/config.yaml')
     args = parser.parse_args()
     data, dgt, dgv = main(args.config)
-
-    #  a = next(dgt)

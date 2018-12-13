@@ -6,7 +6,7 @@ import ipdb
 class RNN(nn.Module):
     def __init__(self, num_input, num_timesteps):
         super(RNN, self).__init__()
-        self.T = num_timesteps
+        self.T = 1 if num_timesteps==0 else num_timesteps
         self.rnn = nn.RNN(input_size = num_input,
                 hidden_size = num_input, 
                 num_layers = 2,
@@ -23,7 +23,7 @@ class RNN(nn.Module):
 class LSTM(nn.Module):
     def __init__(self, num_input, num_timesteps):
         super(LSTM, self).__init__()
-        self.T = num_timesteps
+        self.T = 1 if num_timesteps==0 else num_timesteps
         self.lstm = nn.LSTM(input_size = num_input,
                 hidden_size = num_input, 
                 num_layers = 3,

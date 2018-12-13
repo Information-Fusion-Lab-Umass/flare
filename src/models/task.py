@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class ANN_DX(nn.Module):
-    def __init__(self, num_input):
+    def __init__(self, num_input, num_classes):
         super(ANN_DX, self).__init__()
         self.fc1 = nn.Linear(num_input, 450)
         self.bn1 = nn.BatchNorm1d(450)
@@ -20,7 +20,7 @@ class ANN_DX(nn.Module):
         self.fc5 = nn.Linear(200, 100)
         self.bn5 = nn.BatchNorm1d(100)
 
-        self.fc6 = nn.Linear(100, 3)
+        self.fc6 = nn.Linear(100, num_classes)
 
         self.dp1 = nn.Dropout(p=0.2)
         self.dp2 = nn.Dropout(p=0.5)
