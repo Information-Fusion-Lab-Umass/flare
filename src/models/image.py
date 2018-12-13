@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from disease_forecast.models.unet_utils import * 
+from src.models.unet_utils import * 
 
 class Tadpole1(nn.Module):
     def __init__(self, num_input, num_output):

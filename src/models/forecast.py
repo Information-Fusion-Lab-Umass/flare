@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from disease_forecast import utils
+from src import utils
 import ipdb
 
 class AppendTime(nn.Module):

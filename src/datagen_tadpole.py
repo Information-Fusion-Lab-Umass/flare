@@ -6,7 +6,7 @@ import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
-from disease_forecast import utils
+from src import utils
 import ipdb
 from tqdm import tqdm
 
@@ -385,9 +385,9 @@ def get_img_batch(x, as_tensor=False, on_gpu=False):
     img_type = x[0, 0].image_type
     if img_type =='tadpole':
         num_feat = len(x[0, 0].img_features)
-        feat = np.zeros((B, T, num_feat))
+        feat = np.zeros((B, T-1, num_feat))
         for b in range(B):
-            for t in range(T):
+            for t in range(T-1):
                 feat[b, t, :] = x[b, t].img_features
     elif img_type == 'cnn3d':
         feat = np.zeros((B, T-1, 256, 256, 150))
@@ -420,9 +420,9 @@ def get_long_batch(x, as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     T = 2 if T==1 else T        # To handle no forecasting pipeline
     num_feat = len(x[0, 0].cogtests)
-    feat = np.zeros((B, T, num_feat))
+    feat = np.zeros((B, T-1, num_feat))
     for b in range(B):
-        for t in range(T):
+        for t in range(T-1):
             feat[b, t, :] = x[b, t].cogtests
     if as_tensor==True:
         feat = torch.from_numpy(feat).float()           
@@ -436,9 +436,9 @@ def get_cov_batch(x, as_tensor=False, on_gpu=False):
     (B, T) = x.shape
     T = 2 if T==1 else T        # To handle no forecasting pipeline
     num_feat = len(x[0, 0].covariates)
-    feat = np.zeros((B, T, num_feat))
+    feat = np.zeros((B, T-1, num_feat))
     for b in range(B):
-        for t in range(T):
+        for t in range(T-1):
             feat[b, t, :] = x[b, t].covariates
     if as_tensor==True:
         feat = torch.from_numpy(feat).float()           

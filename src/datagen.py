@@ -6,7 +6,7 @@ import torch
 import xml.etree.ElementTree as ET 
 from itertools import combinations as comb
 from itertools import chain
-from disease_forecast import utils
+from src import utils
 import ipdb
 #from tqdm import tqdm
 

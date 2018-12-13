@@ -6,7 +6,7 @@ from tqdm import tqdm
 import torch
 import torch.nn as nn
 import ipdb
-from disease_forecast import models, utils, datagen_tadpole_cae as datagen, evaluate, unittest
+from src import models, utils, datagen_tadpole as datagen, evaluate, unittest
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -27,7 +27,6 @@ class Model(nn.Module):
                 'rnn': models.RNN,
                 'append_time' : models.AppendTime,
                 'multiply_time' : models.MultiplyTime,
-                'autoenc' : models.AutoEncoder,
                 'dx': models.ANN_DX 
                 }
         
@@ -61,9 +60,8 @@ class Model(nn.Module):
 
         self.fusion = fusion
 
-    def loss(self, y_pred, y, mse):
-        celoss = nn.CrossEntropyLoss()(y_pred, y) 
-        return celoss + mse
+    def loss(self, y_pred, y):
+        return nn.CrossEntropyLoss()(y_pred, y)
         
     def forward(self, data_batch, on_gpu=False):
         (B, T) = data_batch.shape
@@ -71,39 +69,44 @@ class Model(nn.Module):
         # STEP 2: EXTRACT INPUT VALUES -------------------------------------
         # Get time data : x_time_data = (B, T)
         x_time_data = datagen.get_time_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        # Get image data : x_img_data: (B, T, Di)
+        # Get image data : x_img_data: (B, T-1, Di)
         x_img_data = datagen.get_img_batch(data_batch, as_tensor=True, on_gpu=on_gpu) 
-        # Get longitudinal data : x_long_data: (B, T, Dl)  
+        # Get longitudinal data : x_long_data: (B, T-1, Dl)  
         x_long_data = datagen.get_long_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
-        # Get covariate data : x_cov_data: (B, T, Dc)
+        # Get covariate data : x_cov_data: (B, T-1, Dc)
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
+        #  print(torch.sum(x_img_data),torch.sum(x_long_data),torch.sum(x_cov_data))
         #  print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
         #             format(x_time_data.shape, x_img_data.shape, \
         #             x_long_data.shape, x_cov_data.shape))
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
-        x_img_data = x_img_data.view((B*T, 1) + x_img_data.shape[2:])
+        x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         #  print(x_img_data.shape)
         x_img_feat = self.model_image(x_img_data)
-        x_img_feat = x_img_feat.view(B, T, -1)
-        #  print(x_img_feat.min(), x_img_feat.max())
+        x_img_feat = x_img_feat.view(B, T-1, -1)
+        #  if torch.sum(x_img_feat)!= torch.sum(x_img_feat):
+        #      print('img ', torch.sum(x_img_feat))
+        #  print('img ',x_img_feat.min(), x_img_feat.max())
         #  print('Image features dim = ', x_img_feat.shape)
  
         # Get longitudinal features : x_long_feat: (B, T-1, Fl)
-        x_long_data = x_long_data.view(B*T, -1)
+        x_long_data = x_long_data.view(B*(T-1), -1)
         x_long_feat = self.model_long(x_long_data)
-        x_long_feat = x_long_feat.view(B, T, -1)
-        #  print(x_long_feat.min(), x_long_feat.max())
+        x_long_feat = x_long_feat.view(B, T-1, -1)
+        #  if x_long_feat.max()!=x_long_feat.max():
+        #      print('long ', x_long_feat.min(), x_long_feat.max())
         #  print('Longitudinal features dim = ', x_long_feat.shape)
  
         # Get Covariate features : x_cov_feat: (B, T-1, Fc)
-        x_cov_data = x_cov_data.view(B*T, -1)
+        x_cov_data = x_cov_data.view(B*(T-1), -1)
         x_cov_feat = self.model_cov(x_cov_data)
-        x_cov_feat = x_cov_feat.view(B, T, -1)
-        #  print(x_cov_feat.min(), x_cov_feat.max())
+        x_cov_feat = x_cov_feat.view(B, T-1, -1)
+        #  if x_cov_feat.max()!=x_cov_feat.max():
+        #      print('cov ', x_cov_feat.min(), x_cov_feat.max())
         #  print('Covariate features dim = ', x_cov_feat.shape)
  
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
@@ -112,28 +115,22 @@ class Model(nn.Module):
         if self.fusion=='latefuse':
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
         #  print('Feature fusion dims = ', x_feat.shape)
-        x_out = x_feat[:, -1, :]
-        #  print(x_out.shape)
         #  print(x_feat.min(), x_feat.max())
  
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        x_temp = self.model_temporal(x_feat[:, :-1, :])
+        x_temp = self.model_temporal(x_feat)
         #  print('Temporal dims = ', x_temp.shape)
  
         # STEP 6: MODULE 3: FORECASTING ------------------------------------
         # x_forecast: (B, F_f)
         x_forecast = self.model_forecast(x_temp, x_time_data)
-        ndims = x_out.shape[0]*x_out.shape[1]
-        mse_forecast = nn.MSELoss()(x_forecast, x_out)/ndims
-        #  print(x_out.min(), x_out.max(), x_forecast.min(), x_forecast.max(), mse_forecast)
-        #  ipdb.set_trace()
         #  print('Forecast dims = ', x_forecast.shape)
  
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
         ypred = self.model_task(x_forecast)
-        return ypred, mse_forecast
+        return ypred
 
 class Engine:
     def __init__(self, model_config):
@@ -177,8 +174,9 @@ class Engine:
             # Get Train data loss
             x_train_batch = next(datagen_train)
             y_dx = datagen.get_labels(x_train_batch, task='dx', as_tensor=True)
-            y_pred, mse_forecast = self.model(x_train_batch)
-            obj = self.model.loss(y_pred, y_dx, mse_forecast)
+            y_pred = self.model(x_train_batch)
+            obj = self.model.loss(y_pred, y_dx)
+            #  print(obj)
 
             # Train the model
             obj.backward() 
@@ -191,8 +189,8 @@ class Engine:
             self.model.eval()
             x_val_batch = next(datagen_val)
             y_val_dx = datagen.get_labels(x_val_batch, task='dx', as_tensor=True)
-            y_val_pred, mse_val = self.model.forward(x_val_batch)
-            loss_val = self.model.loss(y_val_pred, y_val_dx, mse_val)
+            y_val_pred = self.model.forward(x_val_batch)
+            loss_val = self.model.loss(y_val_pred, y_val_dx)
 
             # print loss values
             loss_vals[epoch, :] = [
@@ -235,7 +233,7 @@ class Engine:
                 num_batches = int(N/batch_size)
                 for i in range(num_batches):
                     data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
-                    y_pred_i, _ = self.model(data_t_batch)
+                    y_pred_i = self.model(data_t_batch)
                     y_dx_i = datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)
                     if i == 0:
@@ -245,8 +243,7 @@ class Engine:
                         y_dx = torch.cat((y_dx, y_dx_i), 0) 
                 data_t_batch = data_t[num_batches*batch_size:]                        
                 if data_t_batch.shape[0]>1:
-                    y_pred_i, _ = self.model(data_t_batch)
-                    y_pred = torch.cat((y_pred, y_pred_i), 0)
+                    y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
                     y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)), 0)            
                 for t in range(6-n_t):
