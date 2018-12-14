@@ -12,18 +12,23 @@ class Tadpole1(nn.Module):
         self.dp1 = nn.Dropout(p=0.1)
 
         self.aff2 = nn.Linear(num_output, num_output)
-        self.bn2 = nn.BatchNorm1d(num_output)       
+        self.bn2 = nn.BatchNorm1d(num_output) 
         self.dp2 = nn.Dropout(p=0.5)
 
         self.aff3 = nn.Linear(num_output, num_output)
-        self.bn3 = nn.BatchNorm1d(num_output)       
+        self.bn3 = nn.BatchNorm1d(num_output) 
         self.dp3 = nn.Dropout(p=0.5)
+
+        self.aff4 = nn.Linear(num_output, num_output)
+        self.bn4 = nn.BatchNorm1d(num_output)       
+        self.dp4 = nn.Dropout(p=0.5)
 
     def forward(self, x):
         x = x.squeeze()
         x = self.dp1(self.bn1(F.relu(self.aff1(x))))
         x = self.dp2(self.bn2(F.relu(self.aff2(x))))
         x = self.dp3(self.bn3(F.relu(self.aff3(x))))
+        x = self.dp4(self.bn4(F.relu(self.aff3(x))))
         return x
 
 class Tadpole2(nn.Module):
