@@ -8,3 +8,4 @@ data_all/
 scripts/errors/
 scripts/run_output/
 *.pyc
+outputs/

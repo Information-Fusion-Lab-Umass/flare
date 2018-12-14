@@ -1,6 +1,6 @@
 # Experiment
 # new task network
-exp_id: clf_3_ipcat_5k_wt_6
+exp_id: debug #clf_3_ipcat_5k_wt_6
 output_dir: &output ../outputs
 train_model: True
 test_model: True 
@@ -16,7 +16,7 @@ data:
 datagen:
     data_split: &data_split 0.8
     batch_size: &bsize 64
-    num_visits: &T 0        
+    num_visits: &T 0 
     feat_flag: &imgType tadpole 
 
 # Model 
@@ -38,10 +38,11 @@ model:
         name: dx1
         num_input: 500
         num_classes: *numcls
+    fusion: concat_input
 
 # Train 
 train:
-    num_epochs: 5000
+    num_epochs: 1
     save_model: True
 
 # Test

@@ -5,6 +5,7 @@ cnn3d: models.unet_3D
     
 # Multimodal models    
 multimodal: models.TadpoleFeat
+multimodal1: models.TadpoleFeat1
 long: models.Longitudinal
 cov: models.Covariate
 
@@ -18,3 +19,4 @@ multiply_time: models.MultiplyTime
 
 # Task specific models
 dx: models.ANN_DX
+dx1: models.ANN_DX_1

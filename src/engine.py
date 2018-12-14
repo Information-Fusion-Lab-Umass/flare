@@ -5,6 +5,7 @@ from scipy.misc import imsave
 from tqdm import tqdm
 import torch
 import torch.nn as nn
+import yaml
 import ipdb
 from src import models, utils, datagen_tadpole as datagen, evaluate, unittest
 import matplotlib
@@ -14,47 +15,35 @@ import matplotlib.pyplot as plt
 
 class Model(nn.Module):
     def __init__(self, class_wt, module_image, module_temporal, \
-            module_forecast, module_task):
+            module_forecast, module_task, fusion):
         super(Model, self).__init__()
-        # Model Architectures: Image
-        model_dict = {
-                'tadpole1': models.Tadpole1,
-                'tadpole2': models.Tadpole2,
-                'multimodal': models.TadpoleFeat,
-                'multimodal1': models.TadpoleFeat1,
-                'cnn3d': models.unet_3D,
-                'long': models.Longitudinal,
-                'cov': models.Covariate,
-                'lstm': models.LSTM,
-                'rnn': models.RNN,
-                'append_time' : models.AppendTime,
-                'multiply_time' : models.MultiplyTime,
-                'dx': models.ANN_DX,
-                'dx1': models.ANN_DX_1 
-                }
-        
+        # Model names file
+        with open('../src/models/models.yaml') as f:
+            model_dict = yaml.load(f)
+        self.fusion = fusion
+
         # Load model: image architecture
         self.model_image_name = module_image.pop('name')
-        self.model_image = model_dict[self.model_image_name](**module_image)
+        self.model_image = eval(model_dict[self.model_image_name])(**module_image)
         
-        if self.model_image_name != 'multimodal':
+        if self.fusion == 'concat_feature':
             # Load model: longitudinal architecture
-            self.model_long = model_dict['long']()
+            self.model_long = eval(model_dict['long'])()
 
             # Load model: covariate architecture
-            self.model_cov = model_dict['cov']()
+            self.model_cov = eval(model_dict['cov'])()
 
         # Load model: temporal architecture
         model_temporal_name = module_temporal.pop('name')
-        self.model_temporal = model_dict[model_temporal_name](**module_temporal)
+        self.model_temporal = eval(model_dict[model_temporal_name])(**module_temporal)
         
         # Load model: forecast architecture
         model_forecast_name = module_forecast.pop('name')
-        self.model_forecast = model_dict[model_forecast_name](**module_forecast)
+        self.model_forecast = eval(model_dict[model_forecast_name])(**module_forecast)
 
         # Load model: Task specific architecture
         model_task_name = module_task.pop('name')
-        self.model_task = model_dict[model_task_name](**module_task)
+        self.model_task = eval(model_dict[model_task_name])(**module_task)
 
         # Class weights for loss
         self.class_wt = torch.tensor(class_wt).float()
@@ -86,11 +75,11 @@ class Model(nn.Module):
         x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
-        if self.model_image_name[:-1] != 'multimodal':
+        if self.fusion == 'concat_feature':
             print(x_img_feat.size())
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T-1, -1)
-        else:
+        elif self.fusion == 'concat_input':
             x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
             #  print('Image shape after permute: ', x_img_data.shape)
             x_img_feat = self.model_image(x_img_data)
@@ -101,7 +90,7 @@ class Model(nn.Module):
         #  print('img ',x_img_feat.min(), x_img_feat.max())
         #  print('Image features dim = ', x_img_feat.shape)
  
-        if self.model_image_name[:-1] != 'multimodal':
+        if self.fusion == 'concat_feature':
             # Get longitudinal features : x_long_feat: (B, T-1, Fl)
             x_long_data = x_long_data.view(B*(T-1), -1)
             x_long_feat = self.model_long(x_long_data)
@@ -120,9 +109,9 @@ class Model(nn.Module):
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
         # Fuse the features
         # x_feat: (B, T-1, F_i+F_l+F_c) = (B, T-1, F)
-        if self.model_image_name[:-1] != 'multimodal':
+        if self.fusion == 'concat_feature':
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
-        else:
+        elif self.fusion == 'concat_input':
             x_feat = x_img_feat
         #  print('Feature fusion dims = ', x_feat.shape)
         #  print(x_feat.min(), x_feat.max())
@@ -162,7 +151,7 @@ class Engine:
                 'temporal': list(self.model.model_temporal.parameters()),
                 'task': list(self.model.model_task.parameters())
                 }
-        if self.model.model_image_name != 'multimodal':
+        if self.model.fusion == 'concat_feature':
             self.model_params['long'] = list(self.model.model_long.parameters())
             self.model_params['cov'] = list(self.model.model_cov.parameters())
 
