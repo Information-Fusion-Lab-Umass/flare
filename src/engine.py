@@ -55,7 +55,7 @@ class Model(nn.Module):
         self.model_task = model_dict[model_task_name](**module_task)
 
         # Class weights for loss
-        self.class_wt = torch.tensor(class_wt)
+        self.class_wt = torch.tensor(class_wt).float()
 
     def loss(self, y_pred, y):
         return nn.CrossEntropyLoss(weight=self.class_wt)(y_pred, y)
