@@ -22,6 +22,7 @@ datagen:
 model:
     load_model: ../outputs/clf_3_ipcat_5k_1/checkpoints/model.pth
     num_classes: &numcls 3
+    class_wt: [1, 1.3, 2.6]
     module_image:
         name:  multimodal # tadpole1
         num_input: 699 # 692
