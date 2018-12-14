@@ -21,6 +21,7 @@ class Model(nn.Module):
                 'tadpole1': models.Tadpole1,
                 'tadpole2': models.Tadpole2,
                 'multimodal': models.TadpoleFeat,
+                'multimodal1': models.TadpoleFeat1,
                 'cnn3d': models.unet_3D,
                 'long': models.Longitudinal,
                 'cov': models.Covariate,
@@ -28,7 +29,8 @@ class Model(nn.Module):
                 'rnn': models.RNN,
                 'append_time' : models.AppendTime,
                 'multiply_time' : models.MultiplyTime,
-                'dx': models.ANN_DX 
+                'dx': models.ANN_DX,
+                'dx1': models.ANN_DX_1 
                 }
         
         # Load model: image architecture

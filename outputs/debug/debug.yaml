@@ -1,8 +1,9 @@
 # Experiment
-exp_id: debug #clf_3_ipcat_5k_1 
+# reduced dropout in image.py and task.py
+exp_id: debug #clf_3_ipcat_5k_wt_4
 output_dir: &output ../outputs
 train_model: True
-test_model: True   
+test_model: True 
 
 # Data
 data:
@@ -20,8 +21,9 @@ datagen:
 
 # Model 
 model:
-    load_model: '' #../outputs/tadpole_1/checkpoints/model.pth'
+    load_model: '' # ../outputs/clf_3_ipcat_5k_1/checkpoints/model.pth
     num_classes: &numcls 3
+    class_wt: [1., 1.3, 2]
     module_image:
         name:  multimodal # tadpole1
         num_input: 699 # 692
@@ -33,7 +35,7 @@ model:
     module_forecast:
         name: append_time
     module_task:
-        name: dx
+        name: dx1
         num_input: 500
         num_classes: *numcls
 

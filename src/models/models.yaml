@@ -1,0 +1,20 @@
+# Image models
+tadpole1: models.Tadpole1
+tadpole2: models.Tadpole2
+cnn3d: models.unet_3D
+    
+# Multimodal models    
+multimodal: models.TadpoleFeat
+long: models.Longitudinal
+cov: models.Covariate
+
+# Temporal models     
+lstm: models.LSTM
+rnn: models.RNN
+
+# Forecasting models     
+append_time: models.AppendTime
+multiply_time: models.MultiplyTime
+
+# Task specific models
+dx: models.ANN_DX

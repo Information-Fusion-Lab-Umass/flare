@@ -1,6 +1,6 @@
 # Experiment
-# reduced dropout in image.py and task.py
-exp_id: clf_3_ipcat_5k_wt_3
+# new task network
+exp_id: clf_3_ipcat_5k_wt_6
 output_dir: &output ../outputs
 train_model: True
 test_model: True 
@@ -35,7 +35,7 @@ model:
     module_forecast:
         name: append_time
     module_task:
-        name: dx
+        name: dx1
         num_input: 500
         num_classes: *numcls
 
