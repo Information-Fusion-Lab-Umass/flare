@@ -36,8 +36,8 @@ def get_output(cmat, exp_dir, data_type, task='dx', num_classes=3):
 
             fig, ax = plt.subplots()
             im = ax.imshow(cmat_out)
-            ax.set_xticks(np.arange(0, num_gap*num_classes, num_classes))
-            ax.set_yticks(np.arange(0, num_T*num_classes, num_classes))
+            #  ax.set_xticks(np.arange(0, num_gap*num_classes, num_classes))
+            #  ax.set_yticks(np.arange(0, num_T*num_classes, num_classes))
             for i in range(num_T*num_classes):
                 for j in range(num_gap*num_classes):
                     text = ax.text(j, i, round(cmat_out[i, j]*100, 1), \

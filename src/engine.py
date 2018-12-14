@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #  torch.backends.cudnn.enabled = False
 
 class Model(nn.Module):
-    def __init__(self, module_image, module_temporal, \
+    def __init__(self, num_classes, module_image, module_temporal, \
             module_forecast, module_task):
         super(Model, self).__init__()
         # Model Architectures: Image
@@ -54,8 +54,14 @@ class Model(nn.Module):
         model_task_name = module_task.pop('name')
         self.model_task = model_dict[model_task_name](**module_task)
 
+        # For the Loss
+        self.num_classes = num_classes
+
     def loss(self, y_pred, y):
-        return nn.CrossEntropyLoss()(y_pred, y)
+        if self.num_classes == 3:
+            return nn.CrossEntropyLoss()(y_pred, y)
+        if self.num_classes == 2:
+            return nn.BCEWithLogitsLoss()(y_pred, y)
  
     def forward(self, data_batch, on_gpu=False):
         (B, T) = data_batch.shape
@@ -143,7 +149,7 @@ class Engine:
     def __init__(self, model_config):
 
         load_model = model_config.pop('load_model')
-        self.num_classes = model_config.pop('num_classes')
+        self.num_classes = model_config['num_classes']
         self.model = Model(**model_config)
 
         # Load the model
@@ -207,9 +213,9 @@ class Engine:
                     loss_val.data.numpy(),
                     x_train_batch.shape[1]
                     ]
-            #  if epoch%100 == 0:
-            print('Loss at epoch {} = {}, T = {}'. format(epoch+1, \
-                    obj.data.numpy(), x_train_batch.shape[1]))
+            if epoch%100 == 0:
+                print('Loss at epoch {} = {}, T = {}'. format(epoch+1, \
+                        obj.data.numpy(), x_train_batch.shape[1]))
 
         # Save loss values as csv and plot image
         df = pd.DataFrame(loss_vals)
@@ -284,16 +290,16 @@ class Engine:
                 y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
                 y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
                         task='dx', as_tensor=True)), 0)
-            print('Prediction stats: ')
-            print('Pred shape = {}, min = {}, max = {}'.\
-                    format(y_pred.shape, y_pred.min(), y_pred.max()))
-            print('True shape = {}, min = {}, max = {}'.\
-                    format(y_dx.shape, y_dx.min(), y_dx.max()))
-            print('Number of samples = ', N)
-            num_classes = int(y_dx.max().data.numpy())+1
-            for cl in range(num_classes):
-                print('Percentage of class {} = {}'.format(cl, \
-                        np.where((y_dx.data.numpy()).astype(int) == cl)[0].size))
+            #  print('Prediction stats: ')
+            #  print('Pred shape = {}, min = {}, max = {}'.\
+            #          format(y_pred.shape, y_pred.min(), y_pred.max()))
+            #  print('True shape = {}, min = {}, max = {}'.\
+            #          format(y_dx.shape, y_dx.min(), y_dx.max()))
+            #  print('Number of samples = ', N)
+            #  num_classes = int(y_dx.max().data.numpy())+1
+            #  for cl in range(num_classes):
+            #      print('Percentage of class {} = {}'.format(cl, \
+            #              np.where((y_dx.data.numpy()).astype(int) == cl)[0].size))
             cnf_matrix = evaluate.cmatCell(
                     evaluate.confmatrix_dx(y_pred, y_dx, self.num_classes))
             evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx', self.num_classes)
