@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #  torch.backends.cudnn.enabled = False
 
 class Model(nn.Module):
-    def __init__(self, num_classes, module_image, module_temporal, \
+    def __init__(self, module_image, module_temporal, \
             module_forecast, module_task):
         super(Model, self).__init__()
         # Model Architectures: Image
@@ -54,14 +54,8 @@ class Model(nn.Module):
         model_task_name = module_task.pop('name')
         self.model_task = model_dict[model_task_name](**module_task)
 
-        # For the Loss
-        self.num_classes = num_classes
-
     def loss(self, y_pred, y):
-        if self.num_classes == 3:
-            return nn.CrossEntropyLoss()(y_pred, y)
-        if self.num_classes == 2:
-            return nn.BCEWithLogitsLoss()(y_pred, y)
+        return nn.CrossEntropyLoss()(y_pred, y)
  
     def forward(self, data_batch, on_gpu=False):
         (B, T) = data_batch.shape
@@ -149,7 +143,7 @@ class Engine:
     def __init__(self, model_config):
 
         load_model = model_config.pop('load_model')
-        self.num_classes = model_config['num_classes']
+        self.num_classes = model_config.pop('num_classes')
         self.model = Model(**model_config)
 
         # Load the model
