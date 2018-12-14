@@ -86,7 +86,8 @@ class Model(nn.Module):
         x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
-        if self.model_image_name != 'multimodal':
+        if self.model_image_name[:-1] != 'multimodal':
+            print(x_img_feat.size())
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T-1, -1)
         else:
@@ -100,7 +101,7 @@ class Model(nn.Module):
         #  print('img ',x_img_feat.min(), x_img_feat.max())
         #  print('Image features dim = ', x_img_feat.shape)
  
-        if self.model_image_name != 'multimodal':
+        if self.model_image_name[:-1] != 'multimodal':
             # Get longitudinal features : x_long_feat: (B, T-1, Fl)
             x_long_data = x_long_data.view(B*(T-1), -1)
             x_long_feat = self.model_long(x_long_data)
@@ -119,7 +120,7 @@ class Model(nn.Module):
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
         # Fuse the features
         # x_feat: (B, T-1, F_i+F_l+F_c) = (B, T-1, F)
-        if self.model_image_name != 'multimodal':
+        if self.model_image_name[:-1] != 'multimodal':
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
         else:
             x_feat = x_img_feat
