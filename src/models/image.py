@@ -13,15 +13,15 @@ class Tadpole1(nn.Module):
 
         self.aff2 = nn.Linear(num_output, num_output)
         self.bn2 = nn.BatchNorm1d(num_output) 
-        self.dp2 = nn.Dropout(p=0.5)
+        self.dp2 = nn.Dropout(p=0.2)
 
         self.aff3 = nn.Linear(num_output, num_output)
         self.bn3 = nn.BatchNorm1d(num_output) 
-        self.dp3 = nn.Dropout(p=0.5)
+        self.dp3 = nn.Dropout(p=0.2)
 
         self.aff4 = nn.Linear(num_output, num_output)
         self.bn4 = nn.BatchNorm1d(num_output)       
-        self.dp4 = nn.Dropout(p=0.5)
+        self.dp4 = nn.Dropout(p=0.2)
 
     def forward(self, x):
         x = x.squeeze()
