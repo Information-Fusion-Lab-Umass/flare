@@ -9,3 +9,4 @@ scripts/errors/
 scripts/run_output/
 *.pyc
 outputs/
+scripts/config/
