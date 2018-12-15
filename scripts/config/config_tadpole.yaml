@@ -1,9 +1,9 @@
 # Experiment
 # new task network
-exp_id: debug #clf_3_ipcat_5k_wt_6
+exp_id: clf_3_featcat_10k_wt_6
 output_dir: &output ../outputs
 train_model: True
-test_model: True 
+test_model: True
 
 # Data
 data:
@@ -15,34 +15,34 @@ data:
 
 datagen:
     data_split: &data_split 0.8
-    batch_size: &bsize 64
-    num_visits: &T 0 
+    batch_size: &bsize 128
+    num_visits: &T 0
     feat_flag: &imgType tadpole 
 
 # Model 
 model:
-    load_model: '' # ../outputs/clf_3_ipcat_5k_1/checkpoints/model.pth
+    load_model: '' #../outputs/clf_3_ipcat_5k_wt_6/checkpoints/model.pth
     num_classes: &numcls 3
     class_wt: [1., 1.3, 2]
     module_image:
-        name:  multimodal # tadpole1
-        num_input: 699 # 692
+        name: tadpole2
+        num_input: 692
         num_output: 500
     module_temporal: 
         name: rnn
-        num_input: 500
+        num_input: 520
         num_timesteps: *T 
     module_forecast:
         name: append_time
     module_task:
         name: dx1
-        num_input: 500
+        num_input: 520
         num_classes: *numcls
-    fusion: concat_input
+    fusion: concat_feature
 
 # Train 
 train:
-    num_epochs: 1
+    num_epochs: 10000
     save_model: True
 
 # Test

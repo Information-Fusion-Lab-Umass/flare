@@ -85,6 +85,7 @@ class Model(nn.Module):
             #  print('Image shape after permute: ', x_img_data.shape)
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T-1, -1)
+        #  print(x_img_feat.size())
 
         #  if torch.sum(x_img_feat)!= torch.sum(x_img_feat):
         #      print('img ', torch.sum(x_img_feat))
