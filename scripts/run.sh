@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=forecast
+#SBATCH --job-name=feat6
 #SBATCH -e errors/res_%j.err            # File to which STDERR will be written
 #SBATCH --output=run_output/res_%j.txt     # output file
 #SBATCH --partition=longq    # Partition to submit to

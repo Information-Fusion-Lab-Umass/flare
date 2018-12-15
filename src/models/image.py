@@ -33,9 +33,9 @@ class Tadpole1(nn.Module):
 
 class Tadpole2(nn.Module):
     def __init__(self, num_input, num_output):
-        super(Tadpole1, self).__init__()
+        super(Tadpole2, self).__init__()
         self.aff1 = nn.Linear(num_input, 1000)
-        self.bn1 = nn.BatchNorm1d(num_output)
+        self.bn1 = nn.BatchNorm1d(1000)
         self.dp1 = nn.Dropout(p=0.5)
 
         self.aff2 = nn.Linear(1000, 1000)
@@ -55,7 +55,7 @@ class Tadpole2(nn.Module):
         x = self.dp1(self.bn1(F.relu(self.aff1(x))))
         x = self.dp2(self.bn2(F.relu(self.aff2(x))))
         x = self.dp3(self.bn3(F.relu(self.aff3(x))))
-        x = self.dp4(self.bn4(F.relu(self.aff3(x))))
+        x = self.dp4(self.bn4(F.relu(self.aff4(x))))
         return x
 
 class unet_3D(nn.Module):
