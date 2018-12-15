@@ -9,5 +9,7 @@ scripts/errors/
 scripts/run_output/
 *.pyc
 outputs/
-scripts/config/
+scripts/config
 scripts/run.sh
+src/.engine.py.swp 
+test_data/
