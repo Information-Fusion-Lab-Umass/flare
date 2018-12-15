@@ -79,7 +79,9 @@ class Model(nn.Module):
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T-1, -1)
         elif self.fusion == 'concat_input':
+            x_img_data = x_img_data.view(B, T-1 ,-1) 
             x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
+            x_img_data = x_img_data.view(B*(T-1),-1)
             #  print('Image shape after permute: ', x_img_data.shape)
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T-1, -1)
@@ -256,8 +258,8 @@ class Engine:
                 for t in range(6-n_t):
                     idx = np.where(time_t[:len(y_dx)]==t+1) 
                     cnf_matrix[n_t-1, t] = evaluate.cmatCell(
-                            evaluate.confmatrix_dx(y_pred[idx], y_dx[idx]))
-            evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx')
+                            evaluate.confmatrix_dx(y_pred[idx], y_dx[idx], self.num_classes))
+            evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx',self.num_classes)
 
         elif task=='classify':
 
