@@ -12,6 +12,7 @@ cov: models.Covariate
 # Temporal models     
 lstm: models.LSTM
 rnn: models.RNN
+forecastRNN: models.forecastRNN
 
 # Forecasting models     
 append_time: models.AppendTime

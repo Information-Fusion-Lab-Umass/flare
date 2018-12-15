@@ -120,7 +120,7 @@ class Model(nn.Module):
  
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        x_temp = self.model_temporal(x_feat)
+        x_temp = self.model_temporal(x_feat) #, x_time_data)
         #  print('Temporal dims = ', x_temp.shape)
         #  print(x_temp.min(), x_temp.max())
  
@@ -255,10 +255,15 @@ class Engine:
                     y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
                     y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)), 0)            
+                #  print('T = ', n_t)
                 for t in range(6-n_t):
                     idx = np.where(time_t[:len(y_dx)]==t+1) 
                     cnf_matrix[n_t-1, t] = evaluate.cmatCell(
                             evaluate.confmatrix_dx(y_pred[idx], y_dx[idx], self.num_classes))
+                    #  print('gap = {}, NL = {}, MCI = {}, AD = {}'.format(\
+                    #          t+1, torch.sum(y_dx[idx]==0), torch.sum(y_dx[idx]==1), \
+                    #          torch.sum(y_dx[idx]==2)))
+
             evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx',self.num_classes)
 
         elif task=='classify':
