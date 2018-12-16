@@ -121,6 +121,7 @@ class Model(nn.Module):
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN':
+            #  print(x_feat.shape, x_time_data.shape)
             x_forecast, lossval = self.model_temporal(x_feat, x_time_data)
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
