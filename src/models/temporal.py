@@ -42,42 +42,28 @@ class forecastRNN(nn.Module):
         (bsize, T, nfeat) = x.shape
         #  print('Input feat shape = ', x.shape)
         #  print('Output shape = ', x_final.shape)
-        if T==1:
-            h = x.squeeze()
-        else:
-            # Forward pass through the RNN
-            h = self.rnn(x)[0]
-            # Forward pass through the featue prediction model
-            h = h.contiguous().view(bsize*T, nfeat)
-        #  print(h.shape)
+        # Forward pass through the RNN
+        h = self.rnn(x)[0]
+        # Forward pass through the featue prediction model
+        h = h.contiguous().view(bsize*T, nfeat)
         y = self.autoenc(h).view(bsize, T, nfeat)
         #  print('RNN output = {}, feat pred module output = {}'.format\
-                #  (h.shape, y.shape))
+        #          (h.shape, y.shape))
         # Calculate the loss
-        if T == 1:
-            lossval = torch.tensor(0.)
-        else:
-            lossval = self.loss(y[:, :-1, :], x[:, 1:, :])
-            #  print('Loss vals = ', lossval.shape, lossval.min(), lossval.max())
+        lossval = self.loss(y[:,:-1,:], x[:,1:,:]) if T!=1 else torch.tensor(0.)
+        #  print('Loss vals = ', lossval)
         gap = (t[:,-1] - t[:,-2]).view(-1, 1)
         #  print('Gaps = ', gap.shape, gap.min(), gap.max())
         
         x_hat = y[:, -1, :]
         x_all_gaps = torch.zeros([bsize, 6-T, nfeat])
-        #  print('x_hat = ', x_hat.shape)
         for t_pred in range(6-T):
-            if T==1:
-                h_hat = x_hat
             h_hat = self.rnn(x_hat.unsqueeze(1))[0].squeeze()
             x_hat = self.autoenc(h_hat)
             x_all_gaps[:, t_pred, :] = x_hat
         gap = (gap - 1)[:,0].long()
         x_pred = x_all_gaps[range(bsize), gap, :]
-        #  print('Final output = ', x_pred.shape)
         lossval += self.loss(x_pred, x_final)
-        #  print('Loss vals = ', lossval.shape, lossval.min(), lossval.max())
-        #  print(x_all_gaps.shape, x_pred.shape)
-        #  print(x_pred.shape, lossval)
         return x_pred, lossval
 
 class RNN(nn.Module):

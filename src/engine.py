@@ -188,9 +188,9 @@ class Engine:
             y_dx = datagen.get_labels(x_train_batch, task='dx', as_tensor=True)
             y_pred, auxloss = self.model(x_train_batch)
             obj = self.model.loss(y_pred, y_dx) 
-            #  print('obj 1 = ', obj)
+            print('obj 1 = ', obj)
             obj = obj + auxloss
-            #  print('obj 2 = ', obj)
+            print('obj 2 = ', obj)
 
             # Train the model
             obj.backward() 
