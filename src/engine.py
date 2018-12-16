@@ -34,8 +34,8 @@ class Model(nn.Module):
             self.model_cov = eval(model_dict['cov'])()
 
         # Load model: temporal architecture
-        model_temporal_name = module_temporal.pop('name')
-        self.model_temporal = eval(model_dict[model_temporal_name])(**module_temporal)
+        self.model_temporal_name = module_temporal.pop('name')
+        self.model_temporal = eval(model_dict[self.model_temporal_name])(**module_temporal)
         
         # Load model: forecast architecture
         model_forecast_name = module_forecast.pop('name')
@@ -72,19 +72,19 @@ class Model(nn.Module):
         
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
-        x_img_data = x_img_data.view((B*(T-1), 1) + x_img_data.shape[2:])
+        x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         if self.fusion == 'concat_feature':
             x_img_feat = self.model_image(x_img_data)
-            x_img_feat = x_img_feat.view(B, T-1, -1)
+            x_img_feat = x_img_feat.view(B, T, -1)
         elif self.fusion == 'concat_input':
-            x_img_data = x_img_data.view(B, T-1 ,-1) 
+            x_img_data = x_img_data.view(B, T ,-1) 
             x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
-            x_img_data = x_img_data.view(B*(T-1),-1)
+            x_img_data = x_img_data.view(B*T,-1)
             #  print('Image shape after permute: ', x_img_data.shape)
             x_img_feat = self.model_image(x_img_data)
-            x_img_feat = x_img_feat.view(B, T-1, -1)
+            x_img_feat = x_img_feat.view(B, T, -1)
         #  print(x_img_feat.size())
 
         #  if torch.sum(x_img_feat)!= torch.sum(x_img_feat):
@@ -94,16 +94,16 @@ class Model(nn.Module):
  
         if self.fusion == 'concat_feature':
             # Get longitudinal features : x_long_feat: (B, T-1, Fl)
-            x_long_data = x_long_data.view(B*(T-1), -1)
+            x_long_data = x_long_data.view(B*(T), -1)
             x_long_feat = self.model_long(x_long_data)
-            x_long_feat = x_long_feat.view(B, T-1, -1)
+            x_long_feat = x_long_feat.view(B, T, -1)
             #  print('long ', x_long_feat.min(), x_long_feat.max())
             #  print('Longitudinal features dim = ', x_long_feat.shape)
       
             # Get Covariate features : x_cov_feat: (B, T-1, Fc)
-            x_cov_data = x_cov_data.view(B*(T-1), -1)
+            x_cov_data = x_cov_data.view(B*(T), -1)
             x_cov_feat = self.model_cov(x_cov_data)
-            x_cov_feat = x_cov_feat.view(B, T-1, -1)
+            x_cov_feat = x_cov_feat.view(B, T, -1)
             #  if x_cov_feat.max()!=x_cov_feat.max():
             #  print('cov ', x_cov_feat.min(), x_cov_feat.max())
             #  print('Covariate features dim = ', x_cov_feat.shape)
@@ -120,21 +120,26 @@ class Model(nn.Module):
  
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        x_temp = self.model_temporal(x_feat) #, x_time_data)
-        #  print('Temporal dims = ', x_temp.shape)
-        #  print(x_temp.min(), x_temp.max())
- 
-        # STEP 6: MODULE 3: FORECASTING ------------------------------------
-        # x_forecast: (B, F_f)
-        x_forecast = self.model_forecast(x_temp, x_time_data)
-        #  print('Forecast dims = ', x_forecast.shape)
-        #  print(x_forecast.min(), x_forecast.max())
+        if self.model_temporal_name == 'forecastRNN':
+            x_forecast, lossval = self.model_temporal(x_feat, x_time_data)
+        else:
+            x_temp = self.model_temporal(x_feat[:, :-1, :])
+            #  print('Temporal dims = ', x_temp.shape)
+            #  print(x_temp.min(), x_temp.max())
+      
+            # STEP 6: MODULE 3: FORECASTING ------------------------------------
+            # x_forecast: (B, F_f)
+            x_forecast = self.model_forecast(x_temp, x_time_data)
+            #  print('Forecast dims = ', x_forecast.shape)
+            #  print(x_forecast.min(), x_forecast.max())
+            lossval = torch.tensor(0.)
  
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
         ypred = self.model_task(x_forecast)
         #  print('Output dims = ', ypred.shape)
-        return ypred
+
+        return ypred, lossval
 
 class Engine:
     def __init__(self, model_config):
@@ -180,9 +185,11 @@ class Engine:
             # Get Train data loss
             x_train_batch = next(datagen_train)
             y_dx = datagen.get_labels(x_train_batch, task='dx', as_tensor=True)
-            y_pred = self.model(x_train_batch)
-            obj = self.model.loss(y_pred, y_dx)
-            #  print(obj)
+            y_pred, auxloss = self.model(x_train_batch)
+            obj = self.model.loss(y_pred, y_dx) 
+            #  print('obj 1 = ', obj)
+            obj = obj + auxloss
+            #  print('obj 2 = ', obj)
 
             # Train the model
             obj.backward() 
@@ -195,8 +202,8 @@ class Engine:
             self.model.eval()
             x_val_batch = next(datagen_val)
             y_val_dx = datagen.get_labels(x_val_batch, task='dx', as_tensor=True)
-            y_val_pred = self.model.forward(x_val_batch)
-            loss_val = self.model.loss(y_val_pred, y_val_dx)
+            y_val_pred, auxloss_val = self.model.forward(x_val_batch)
+            loss_val = self.model.loss(y_val_pred, y_val_dx) + auxloss_val
 
             # print loss values
             loss_vals[epoch, :] = [
@@ -242,7 +249,7 @@ class Engine:
                 num_batches = int(N/batch_size)
                 for i in range(num_batches):
                     data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
-                    y_pred_i = self.model(data_t_batch)
+                    y_pred_i, _ = self.model(data_t_batch)
                     y_dx_i = datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)
                     if i == 0:
@@ -252,7 +259,7 @@ class Engine:
                         y_dx = torch.cat((y_dx, y_dx_i), 0) 
                 data_t_batch = data_t[num_batches*batch_size:]                        
                 if data_t_batch.shape[0]>1:
-                    y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
+                    y_pred = torch.cat((y_pred, self.model(data_t_batch)[0]), 0)
                     y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
                             task='dx', as_tensor=True)), 0)            
                 #  print('T = ', n_t)
