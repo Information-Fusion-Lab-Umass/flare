@@ -25,9 +25,9 @@ class forecastRNN(nn.Module):
 
         self.rnn = nn.RNN(input_size = num_input,
                 hidden_size = num_input, 
-                num_layers = 2,
+                num_layers = 1,
                 batch_first=True,
-                dropout=0.2, 
+                dropout=0.0, 
                 bidirectional=False)
     
     def loss(self, ypred, y):
@@ -47,6 +47,7 @@ class forecastRNN(nn.Module):
         # Forward pass through the featue prediction model
         h = h.contiguous().view(bsize*T, nfeat)
         y = self.autoenc(h).view(bsize, T, nfeat)
+        h = h.view(bsize, T, nfeat)
         #  print('RNN output = {}, feat pred module output = {}'.format\
         #          (h.shape, y.shape))
         # Calculate the loss
@@ -56,9 +57,10 @@ class forecastRNN(nn.Module):
         #  print('Gaps = ', gap.shape, gap.min(), gap.max())
         
         x_hat = y[:, -1, :]
+        h_hat = h[:, -1, :]
         x_all_gaps = torch.zeros([bsize, 6-T, nfeat])
         for t_pred in range(6-T):
-            h_hat = self.rnn(x_hat.unsqueeze(1))[0].squeeze()
+            h_hat = self.rnn(x_hat.unsqueeze(1), h_hat.unsqueeze(0))[0].squeeze()
             x_hat = self.autoenc(h_hat)
             x_all_gaps[:, t_pred, :] = x_hat
         gap = (gap - 1)[:,0].long()
