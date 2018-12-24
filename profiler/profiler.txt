@@ -1,0 +1,3 @@
+Input size:  torch.Size([40])
+Out size:  torch.Size([30])
+Arange size:  torch.Size([30])
