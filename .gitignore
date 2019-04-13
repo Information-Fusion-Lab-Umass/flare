@@ -13,3 +13,5 @@ scripts/config
 scripts/run.sh
 src/.engine.py.swp 
 test_data/
+scripts/run_output
+scripts/errors

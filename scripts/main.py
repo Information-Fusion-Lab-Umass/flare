@@ -49,25 +49,28 @@ def main(config_file):
     print('Datagens Loaded : ', time()-t)
 
     # Define Classification model
-    model = engine.Engine(config['model'])
+    #  model = engine.Engine(config['model'])
 
     # Train the model
-    if config['train_model']:
-        print('Training the model ...')
-        model.train(datagen_train, datagen_val, exp_dir, **config['train'])
-
-    # Test the model
-    if config['test_model']:
-        print('Testing the model ...')
-        print('Train data : ')
-        model.test(data_train, exp_dir, 'train', **config['test'])
-        print('Val data : ')
-        model.test(data_val, exp_dir, 'val', **config['test'])
+    #  if config['train_model']:
+    #      print('Training the model ...')
+    #      model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    #
+    #  # Test the model
+    #  if config['test_model']:
+    #      print('Testing the model ...')
+    #      print('Train data : ')
+    #      model.test(data_train, exp_dir, 'train', **config['test'])
+    #      print('Val data : ')
+    #      model.test(data_val, exp_dir, 'val', **config['test'])
 
     return data, datagen_train, datagen_val
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default='config/config.yaml')
+    parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
     data, dgt, dgv = main(args.config)
+	
+
+

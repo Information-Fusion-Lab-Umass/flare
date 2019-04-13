@@ -1,7 +1,0 @@
-]0;IPython: disease_forecasting/scriptsData Loaded :  0.7562851905822754
-Train = 305, Val = 77
-Datagens Loaded :  4.935264587402344e-05
-Training ...
-Loss at epoch 1 = 1.1272130012512207, T = 2
-Train data : 
-Val data : 

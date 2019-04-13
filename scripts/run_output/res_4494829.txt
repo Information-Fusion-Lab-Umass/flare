@@ -1,3 +1,0 @@
-]0;IPython: disease_forecasting/scriptsData Loaded :  0.1709001064300537
-Train = 305, Val = 77
-Datagens Loaded :  5.412101745605469e-05
