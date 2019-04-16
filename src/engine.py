@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import yaml
 import ipdb
-from src import models, utils, datagen_tadpole as datagen, evaluate, unittest
+from src import models, utils, datagen, evaluate, unittest
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -26,7 +26,7 @@ class Model(nn.Module):
         self.model_image_name = module_image.pop('name')
         self.model_image = eval(model_dict[self.model_image_name])(**module_image)
         
-        if self.fusion == 'concat_feature':
+        if self.fusion == 'latefuse':
             # Load model: longitudinal architecture
             self.model_long = eval(model_dict['long'])()
 

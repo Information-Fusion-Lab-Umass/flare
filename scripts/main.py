@@ -10,7 +10,7 @@ import ipdb
 from time import time
 import pickle
 import numpy as np
-from src import datagen_tadpole as datagen, utils, engine
+from src import datagen, utils, engine
 
 def main(config_file):
     
@@ -49,7 +49,7 @@ def main(config_file):
     print('Datagens Loaded : ', time()-t)
 
     # Define Classification model
-    #  model = engine.Engine(config['model'])
+	model = engine.Engine(config['model'])
 
     # Train the model
     #  if config['train_model']:
@@ -71,6 +71,8 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
     data, dgt, dgv = main(args.config)
+
+
 	
 
 
