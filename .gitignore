@@ -15,3 +15,6 @@ src/.engine.py.swp
 test_data/
 scripts/run_output
 scripts/errors
+notebooks/
+outputs/debug
+scripts/misc

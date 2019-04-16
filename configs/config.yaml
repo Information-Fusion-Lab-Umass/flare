@@ -4,7 +4,7 @@ output_dir: &output ../outputs
 
 # Data
 data:
-    path_load: ../data/data_nonan1.pickle
+    path_load: ../data/data.pickle
     path_meta: ../data/metadata
     path_images: ../../../ADNI_data/data
     path_feat: ../data/features.csv
