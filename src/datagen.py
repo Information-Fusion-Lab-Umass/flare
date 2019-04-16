@@ -75,10 +75,11 @@ class Data:
                     self.covariates = self.get_covariates(feat_viscode)
                     flag_get_covariates = 1
                 
-        #Store visit values in sorted, integer form
+        # Store visit values in sorted, integer form
         self.which_visits = self.get_which_visits(temp_visits) 
         
-        #Store trajectory values. Set to get_trajectories_cont() until we find a way to impute missing data
+        # Store trajectory values. Set to get_trajectories_cont() until 
+        # we find a way to impute missing data
         self.trajectories = self.get_trajectories_cont()
 
 
@@ -165,15 +166,6 @@ class Data:
         return img_feat
 
     def get_metrics(self, feat):
-#        dict_dx = {'NL':0,
-#                   'MCI to NL':0,
-#                   'NL to MCI':1,
-#                   'Dementia to MCI':1,
-#                   'MCI':1,
-#                   'MCI to Dementia':2,
-#                   'Dementia':2,
-#                   'NL to Dementia':2
-#                   }
         dict_dx = {'NL':0,
                    'MCI to NL':0,
                    'NL to MCI':0,
