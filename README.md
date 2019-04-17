@@ -46,7 +46,8 @@ be loaded for all future experiments.
 
 Thus, the model can be trained by doing the following:  
 	```
-	Set train_model = True in config.yaml  
+	Set train_model = True in config.yaml
+  
 	Run the command python main.py --config=../configs/config.yaml  
 	```
 
@@ -66,7 +67,8 @@ The evaluation confusion matrices are stored in the directory
 The model can be evaluated on the train, validation, and test datasets by 
 doing the following:  
 	```
-	Set train_model = False and test_model = True in config.yaml  
+	Set train_model = False and test_model = True in config.yaml    
+
 	Run the command python main.py --config=../configs/config.yaml  
 	```
 
