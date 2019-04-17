@@ -45,10 +45,10 @@ be loaded for all future experiments.
 4. Evaluates the model. 
 
 Thus, the model can be trained by doing the following:  
+	1. Set train_model = True in config.yaml.  
+	2. Run the command:   
 	```
-	Set train_model = True in config.yaml
-  
-	Run the command python main.py --config=../configs/config.yaml  
+	python main.py --config=../configs/config.yaml  
 	```
 
 ### Experiment Outputs
@@ -66,10 +66,10 @@ The evaluation confusion matrices are stored in the directory
 ### Evaluation
 The model can be evaluated on the train, validation, and test datasets by 
 doing the following:  
+	1. Set train_model = False and test_model = True in config.yaml.  
+	2. Run the command:  
 	```
-	Set train_model = False and test_model = True in config.yaml    
-
-	Run the command python main.py --config=../configs/config.yaml  
+	python main.py --config=../configs/config.yaml  
 	```
 
 The results are stored in the directory *outputs/<exp_id>/results/*. 
