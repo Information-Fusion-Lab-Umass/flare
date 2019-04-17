@@ -3,11 +3,10 @@
 ### Introduction
 FLARe is a novel approach for disease trajectory forecasting using multimodal 
 longitudinal data. Our academic paper which describes FLARe in detail and 
-provides comprehensive results can be found here :  
+provides comprehensive results can be found here : **ADD PATH TO THE ARXIV PAPER HERE.** 
 
 ### Data
-We used data from the [TADPOLE](https://tadpole.grand-challenge.org/Data/#Data) 
-challenge. Specifically, we used the **TADPOLE_D1_D2.csv** file. Download 
+We used data from the [TADPOLE challenge](https://tadpole.grand-challenge.org/Data/#Data). Specifically, we used the **TADPOLE_D1_D2.csv** file. Download 
 that file and save it in the directory *data/*.  
 
 ### Setup
@@ -72,9 +71,9 @@ doing the following:
 	```
 The results are stored in the directory *outputs/<exp_id>/results/*. 
 
-We are uploading the experiment folder **forecast_3_featcat_proposed_20k_4_3** with the best results here. The model 
+We are uploading the experiment folder **flare_pretrained/** with the best results here. The model 
 can be initialized with these pretrained weights by setting  
-model.load_model: '../outputs/forecast_3_featcat_proposed_20k_4_3/checkpoints/model.pth'  
+model.load_model: '../outputs/flare_pretrained/checkpoints/model.pth'  
 in the config file. 
 
 

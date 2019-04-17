@@ -20,7 +20,7 @@ def main(config_file):
 
     # Create experiment output directories
     exp_dir = os.path.join(config['output_dir'], config['exp_id'])
-    utils.create_dirs([exp_dir,
+    utils.create_dirs([config['output_dir'], exp_dir,
             os.path.join(exp_dir, 'checkpoints'),
             os.path.join(exp_dir, 'results'),
             os.path.join(exp_dir, 'logs')])
@@ -64,13 +64,11 @@ def main(config_file):
         print('Val data : ')
         model.test(data_val, exp_dir, 'val1', **config['test'])
 
-    return data, datagen_train, datagen_val
-
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
-    data, dgt, dgv = main(args.config)
+    main(args.config)
 
 
     
