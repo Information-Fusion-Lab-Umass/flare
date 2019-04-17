@@ -71,7 +71,7 @@ doing the following:
 	```
 The results are stored in the directory *outputs/<exp_id>/results/*. 
 
-We are uploading the experiment folder **flare_pretrained/** with the best results here. The model 
+We uploaded the experiment folder **flare_pretrained/** with the best results [here](https://www.dropbox.com/sh/vgrj13a1f0cmmcx/AADm4aHGMbLK7bCc29dsoVqma?dl=0). The model 
 can be initialized with these pretrained weights by setting  
 model.load_model: '../outputs/flare_pretrained/checkpoints/model.pth'  
 in the config file. 
