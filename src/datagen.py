@@ -211,10 +211,9 @@ class Data:
         key = [x for x in vals[0].iter('visitIdentifier')][0].text
         return dict_visit[key]
 
-def get_data_tadpole(path_meta, path_images, path_feat, min_visits=1): 
+def get_data_tadpole(path_feat, min_visits=1): 
 
     data_feat = pd.read_csv(path_feat, dtype=object)
-    #  print(len(data_feat))
     id_list = list(set(data_feat.PTID.values))
     data = {}
     dict_visit2int = {'bl':0,

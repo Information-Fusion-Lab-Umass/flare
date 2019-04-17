@@ -60,9 +60,9 @@ def main(config_file):
     if config['test_model']:
         print('Testing the model ...')
         print('Train data : ')
-        model.test(data_train, exp_dir, 'train', **config['test'])
+        model.test(data_train, exp_dir, 'train1', **config['test'])
         print('Val data : ')
-        model.test(data_val, exp_dir, 'val', **config['test'])
+        model.test(data_val, exp_dir, 'val1', **config['test'])
 
     return data, datagen_train, datagen_val
 

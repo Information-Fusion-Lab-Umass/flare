@@ -65,10 +65,6 @@ class Model(nn.Module):
         x_cov_data = datagen.get_cov_batch(data_batch, as_tensor=True, on_gpu=on_gpu)
         #  print(torch.sum(x_img_data),torch.sum(x_long_data),torch.sum(x_cov_data))
 
-        print('Input data dims: Time={}, Image={}, Long={}, Cov={}'.\
-                   format(x_time_data.shape, x_img_data.shape, \
-                   x_long_data.shape, x_cov_data.shape))
-        
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
         x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
@@ -81,31 +77,19 @@ class Model(nn.Module):
             x_img_data = x_img_data.view(B, T ,-1) 
             x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
             x_img_data = x_img_data.view(B*T,-1)
-            #  print('Image shape after permute: ', x_img_data.shape)
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T, -1)
-        print(x_img_feat.size())
 
-        if torch.sum(x_img_feat)!= torch.sum(x_img_feat):
-            print('img ', torch.sum(x_img_feat))
-        print('img ',x_img_feat.min(), x_img_feat.max())
-        print('Image features dim = ', x_img_feat.shape)
- 
         if self.fusion == 'concat_feature':
             # Get longitudinal features : x_long_feat: (B, T-1, Fl)
             x_long_data = x_long_data.view(B*(T), -1)
             x_long_feat = self.model_long(x_long_data)
             x_long_feat = x_long_feat.view(B, T, -1)
-            print('long ', x_long_feat.min(), x_long_feat.max())
-            print('Longitudinal features dim = ', x_long_feat.shape)
       
             # Get Covariate features : x_cov_feat: (B, T-1, Fc)
             x_cov_data = x_cov_data.view(B*(T), -1)
             x_cov_feat = self.model_cov(x_cov_data)
             x_cov_feat = x_cov_feat.view(B, T, -1)
-            #  if x_cov_feat.max()!=x_cov_feat.max():
-            print('cov ', x_cov_feat.min(), x_cov_feat.max())
-            print('Covariate features dim = ', x_cov_feat.shape)
  
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
         # Fuse the features
@@ -114,31 +98,22 @@ class Model(nn.Module):
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
         elif self.fusion == 'concat_input':
             x_feat = x_img_feat
-        print('Feature fusion dims = ', x_feat.shape)
-        print(x_feat.min(), x_feat.max())
  
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN':
-            print(x_feat.shape, x_time_data.shape)
             x_forecast, lossval = self.model_temporal(x_feat, x_time_data)
-            print('x_forecast = ', x_forecast.shape, lossval)
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
-            print('Temporal dims = ', x_temp.shape)
-            print(x_temp.min(), x_temp.max())
       
             # STEP 6: MODULE 3: FORECASTING ------------------------------------
             # x_forecast: (B, F_f)
             x_forecast = self.model_forecast(x_temp, x_time_data)
-            print('Forecast dims = ', x_forecast.shape)
-            print(x_forecast.min(), x_forecast.max())
             lossval = torch.tensor(0.)
  
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
         ypred = self.model_task(x_forecast)
-        print('Output dims = ', ypred.shape)
 
         return ypred, lossval
 
@@ -148,6 +123,7 @@ class Engine:
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
         self.model = Model(**model_config)
+        print(self.model.model_image.aff1.type)
 
         # Load the model
         if load_model != '':
@@ -188,10 +164,7 @@ class Engine:
             x_train_batch = next(datagen_train)
             y_dx = datagen.get_labels(x_train_batch, task='dx', as_tensor=True)
             y_pred, auxloss = self.model(x_train_batch)
-            obj = self.model.loss(y_pred, y_dx) 
-            print('obj 1 = ', obj)
-            obj = obj + auxloss
-            print('obj 2 = ', obj)
+            obj = self.model.loss(y_pred, y_dx) + aux_loss
 
             # Train the model
             obj.backward() 
@@ -239,53 +212,19 @@ class Engine:
         plt.savefig(exp_dir+'/logs/loss.png', dpi=300)
         plt.close()
 
-    def test(self, data, exp_dir, data_type, batch_size, feat_flag):
+    def test(self, data, exp_dir, data_name, batch_size, feat_flag):
 
         self.model.eval()
-
-        if task == 'forecast':
-
-            cnf_matrix = np.empty((4, 5), dtype=object)
-            for n_t in range(1, 5):
-                data_t = datagen.get_timeBatch(data, n_t, feat_flag)
-                time_t = datagen.get_time_batch(data_t, as_tensor=True)
-                time_t = (time_t[:,-1] - time_t[:,-2]).data.numpy()
-                (N, T) = data_t.shape
-                num_batches = int(N/batch_size)
-                for i in range(num_batches):
-                    data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
-                    y_pred_i, _ = self.model(data_t_batch)
-                    y_dx_i = datagen.get_labels(data_t_batch, \
-                            task='dx', as_tensor=True)
-                    if i == 0:
-                        y_pred, y_dx = y_pred_i, y_dx_i
-                    else:
-                        y_pred = torch.cat((y_pred, y_pred_i), 0) 
-                        y_dx = torch.cat((y_dx, y_dx_i), 0) 
-                data_t_batch = data_t[num_batches*batch_size:]                        
-                if data_t_batch.shape[0]>1:
-                    y_pred = torch.cat((y_pred, self.model(data_t_batch)[0]), 0)
-                    y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
-                            task='dx', as_tensor=True)), 0)            
-                #  print('T = ', n_t)
-                for t in range(6-n_t):
-                    idx = np.where(time_t[:len(y_dx)]==t+1) 
-                    cnf_matrix[n_t-1, t] = evaluate.cmatCell(
-                            evaluate.confmatrix_dx(y_pred[idx], y_dx[idx], self.num_classes))
-                    #  print('gap = {}, NL = {}, MCI = {}, AD = {}'.format(\
-                    #          t+1, torch.sum(y_dx[idx]==0), torch.sum(y_dx[idx]==1), \
-                    #          torch.sum(y_dx[idx]==2)))
-
-            evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx',self.num_classes)
-
-        elif task=='classify':
-
-            data_t = datagen.get_timeBatch(data, 0, feat_flag)
-            N = data_t.shape[0]
+        cnf_matrix = np.empty((4, 5), dtype=object)
+        for n_t in range(1, 5):
+            data_t = datagen.get_timeBatch(data, n_t, feat_flag)
+            time_t = datagen.get_time_batch(data_t, as_tensor=True)
+            time_t = (time_t[:,-1] - time_t[:,-2]).data.numpy()
+            (N, T) = data_t.shape
             num_batches = int(N/batch_size)
             for i in range(num_batches):
                 data_t_batch = data_t[i*batch_size:(i+1)*batch_size]
-                y_pred_i = self.model(data_t_batch)
+                y_pred_i, _ = self.model(data_t_batch)
                 y_dx_i = datagen.get_labels(data_t_batch, \
                         task='dx', as_tensor=True)
                 if i == 0:
@@ -295,20 +234,14 @@ class Engine:
                     y_dx = torch.cat((y_dx, y_dx_i), 0) 
             data_t_batch = data_t[num_batches*batch_size:]                        
             if data_t_batch.shape[0]>1:
-                y_pred = torch.cat((y_pred, self.model(data_t_batch)), 0)
+                y_pred = torch.cat((y_pred, self.model(data_t_batch)[0]), 0)
                 y_dx = torch.cat((y_dx, datagen.get_labels(data_t_batch, \
-                        task='dx', as_tensor=True)), 0)
-            #  print('Prediction stats: ')
-            #  print('Pred shape = {}, min = {}, max = {}'.\
-            #          format(y_pred.shape, y_pred.min(), y_pred.max()))
-            #  print('True shape = {}, min = {}, max = {}'.\
-            #          format(y_dx.shape, y_dx.min(), y_dx.max()))
-            #  print('Number of samples = ', N)
-            #  num_classes = int(y_dx.max().data.numpy())+1
-            #  for cl in range(num_classes):
-            #      print('Percentage of class {} = {}'.format(cl, \
-            #              np.where((y_dx.data.numpy()).astype(int) == cl)[0].size))
-            cnf_matrix = evaluate.cmatCell(
-                    evaluate.confmatrix_dx(y_pred, y_dx, self.num_classes))
-            evaluate.get_output(cnf_matrix, exp_dir, data_type, 'dx', self.num_classes)
+                        task='dx', as_tensor=True)), 0)            
+            for t in range(6-n_t):
+                idx = np.where(time_t[:len(y_dx)]==t+1) 
+                cnf_matrix[n_t-1, t] = evaluate.cmatCell(
+                        evaluate.confmatrix_dx(y_pred[idx], y_dx[idx], self.num_classes))
 
+            evaluate.get_output(cnf_matrix, exp_dir, data_name, 'dx', self.num_classes)
+
+        

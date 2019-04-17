@@ -1,15 +1,13 @@
 # Experiment
-exp_id: debug
+exp_id: debug_test
 output_dir: &output ../outputs
-train_model: True    
+train_model: False 
 test_model: True    
 
 # Data
 data:
     path_load: ../data/data.pickle
-    path_meta: ../data/metadata
-    path_images: ../../../ADNI_data/data
-    path_feat: ../data/features.csv
+    path_feat: ../data/TADPOLE_D1_D2.csv
     min_visits: 2
 
 datagen:
@@ -20,12 +18,12 @@ datagen:
 
 # Model 
 model:
-    load_model: ''
+    load_model: '../outputs/forecast_3_featcat_proposed_20k_4_3/checkpoints/model.pth'
     class_wt: [1, 1.3, 2]
     module_image:
-        name: tadpole1
+        name: tadpole
         num_input: 692
-        num_output: 500
+        num_output: 1000
     module_temporal: 
         name: forecastRNN
         num_input: 520

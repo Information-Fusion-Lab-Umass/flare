@@ -1,7 +1,5 @@
 # Image models
-tadpole1: models.Tadpole1
-tadpole2: models.Tadpole2
-cnn3d: models.unet_3D
+tadpole: models.Tadpole
     
 # Multimodal models    
 multimodal: models.TadpoleFeat
