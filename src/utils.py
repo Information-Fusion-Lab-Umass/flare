@@ -26,3 +26,21 @@ def one_hot(labels, C=5):
     labels = torch.squeeze(labels) - 1
     labels_onehot[torch.arange(N), labels.type(torch.long)] = 1
     return labels_onehot
+
+# Data utils
+def is_consec(seq):
+    '''
+    Checks if the iterable 'seq' has consecutive entries
+    '''
+    return sorted(seq) == list(range(min(seq),max(seq)+1))
+
+def return_consec(listseq):
+    '''
+    Given a list of sequences listseq, return only the sequences seq such
+    that seq[:-1] is consecutive.
+    '''
+    consec = []
+    for seq in listseq:
+        if(is_consec(seq[:-1])):
+            consec.append(seq)
+    return consec
