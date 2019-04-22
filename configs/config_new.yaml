@@ -7,14 +7,14 @@ test_model: False
 # Data
 data:
     path_load: ../data/data_new.pickle
-    path_feat: ../data/TADPOLE_D1_D2.csv
+    path: ../data/TADPOLE_D1_D2_proc.csv
     min_visits: 2
+    only_consecutive: True
 
 datagen:
     data_split: &data_split 0.8
     batch_size: &bsize 32
-    num_visits: &T 3
-    feat_flag: &imgType tadpole 
+    max_visits: &T 6 
 
 # Model 
 model:
@@ -46,5 +46,5 @@ train:
 # Test
 test:
     batch_size: *bsize
-    feat_flag: *imgType
+    # feat_flag: *imgType
 
