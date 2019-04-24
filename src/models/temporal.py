@@ -49,17 +49,20 @@ class forecastRNN(nn.Module):
         y = self.autoenc(h).view(bsize, T, nfeat)
         h = h.view(bsize, T, nfeat)
         #  print('RNN output = {}, feat pred module output = {}'.format\
-                #  (h.shape, y.shape))
+        #          (h.shape, y.shape))
+        #  print(h.min(), h.max(), y.min(), y.max(), x.min(), x.max())
         # Calculate the loss
         lossval = self.loss(y[:,:-1,:], x[:,1:,:]) if T!=1 else torch.tensor(0.)
         #  print('Loss vals = ', lossval)
-        gap = (t[:,-1] - t[:,-2]).view(-1, 1)
+        #  gap = (t[:,-1] - t[:,-2]).view(-1, 1)
+        gap = t.view(-1, 1)
         #  print('Gaps = ', gap.shape, gap.min(), gap.max())
         
         x_hat = y[:, -1, :]
         h_hat = h[:, -1, :]
-        x_all_gaps = torch.zeros([bsize, 6-T, nfeat])
-        for t_pred in range(6-T):
+        max_gap = int(gap.max()) 
+        x_all_gaps = torch.zeros([bsize, max_gap, nfeat])
+        for t_pred in range(max_gap):
             h_hat = self.rnn(x_hat.unsqueeze(1), h_hat.unsqueeze(0))[0].squeeze()
             x_hat = self.autoenc(h_hat)
             x_all_gaps[:, t_pred, :] = x_hat

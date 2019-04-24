@@ -10,7 +10,7 @@ import ipdb
 from time import time
 import pickle
 import numpy as np
-from src import datagen_new as datagen, utils, engine
+from src import datagen_new as datagen, utils, engine_new as engine
 
 def main(config_file):
     
@@ -44,17 +44,17 @@ def main(config_file):
 
     # Datagens
     t = time()
-    datagen_train, datagen_val =\
+    datagen_train, datagen_val = \
             datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
-    #
-    #  # Define Classification model
-    #  model = engine.Engine(config['model'])
-    #
-    #  # Train the model
-    #  if config['train_model']:
-    #      print('Training the model ...')
-    #      model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+
+    # Define Classification model
+    model = engine.Engine(config['model'])
+
+    # Train the model
+    if config['train_model']:
+        print('Training the model ...')
+        model.train(datagen_train, datagen_val, exp_dir, **config['train'])
     #
     #  # Test the model
     #  if config['test_model']:
@@ -72,10 +72,22 @@ if __name__=='__main__':
     args = parser.parse_args()
     dgt, dgv = main(args.config)
 
-    x = next(dgt)
+    #  print('\n Train dataloader')
+    #  for epoch in range(2):
+    #      for i, datagen_T in enumerate(dgt):
+    #          num_samples = 0
+    #          for x, y in datagen_T:
+    #              num_samples += len(y)
+    #          print('T = {}, N = {}'.format(i + 2, num_samples))
+    #
+    #  print('\n Val dataloader')
+    #  for i, datagen_T in enumerate(dgv):
+    #      num_samples = 0
+    #      for x, y in datagen_T:
+    #          num_samples += len(y)
+    #      print('T = {}, N = {}'.format(i + 2, num_samples))
 
-
-
+    
 
     
 

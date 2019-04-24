@@ -37,7 +37,7 @@ def get_datagen(src_data, data_split, batch_size, max_visits):
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_val, T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
-        datagen_train.append(dataloader)
+        datagen_val.append(dataloader)
 
     return datagen_train, datagen_val
 
@@ -45,8 +45,12 @@ class Dataset(data.Dataset):
     def __init__(self, data, T):
         self.T = T
         self.data = data
+
+        # Collect trajectories from all patients with key = T
         self.trajectories = [self.data[pid].trajectories[T] \
-                for pid in self.data]     
+                for pid in self.data \
+                if T in self.data[pid].trajectories]     
+        self.trajectories = sum(self.trajectories, [])
 
     def __len__(self):
         """ 
@@ -55,16 +59,19 @@ class Dataset(data.Dataset):
         return len(self.trajectories)
 
     def __getitem__(self, index):
+        trajectory = self.trajectories[index]
         x = {}
-        x['tau'] = self.trajectories[index].tau
-        x['img'] = self.get_data(self.trajectories[index], 'img_features')
-        x['cov'] = self.get_data(self.trajectories[index], 'covariates')
-        x['long'] = self.get_data(self.trajectories[index], 'test_scores')
-        y = self.get_data(self.trajectories[index], 'labels')
+        x['tau'] = trajectory.tau
+        x['img_features'] = self.get_data(trajectory, 'img_features')
+        x['covariates'] = self.get_data(trajectory, 'covariates')
+        x['test_scores'] = self.get_data(trajectory, 'test_scores')
+        y = self.get_data(trajectory, 'labels')[-1, 0]
         return x, y
 
     def get_data(self, trajectory, key):
-        x = [visit.data[key] for visit in trajectory.visits]
+        # Sort the visit ids, ignore last visit data
+        visits_id = sorted(trajectory.visits)
+        x = [trajectory.visits[idx].data[key] for idx in visits_id]
         x = np.vstack(x)
         return torch.from_numpy(x).float()
 

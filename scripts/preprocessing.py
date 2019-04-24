@@ -24,12 +24,23 @@ def preprocess_adni(input_path, output_path):
     # Impute missing image feature data  
     data.sort_values(by = ['PTID', 'VISNUM'], inplace = True)
     data = data.groupby('PTID').ffill()
+    all_nan_cols = []
     for name in tqdm(data.columns.values):
         if('UCSFFSX' in name or 'UCSFFSL' in name):
             if(name.startswith('ST') and 'STATUS' not in name):
                 data[name] = data[name].apply(pd.to_numeric, errors = 'coerce')
                 data[name].fillna(data[name].mean(), inplace=True)
+                if np.sum(np.isnan(data[name].values)) > 0: 
+                    all_nan_cols.append(name)
+    data = data.drop(all_nan_cols, axis = 1)    
     
+    # Fill Nan values of features with mean
+    cols = ['ADAS13', 'MMSE', 'ADAS11', 'RAVLT_immediate', \
+            'RAVLT_forgetting', 'AGE', 'CDRSB']
+    for col in cols:
+        data[col] = data[col].apply(pd.to_numeric, errors = 'coerce')
+        data[col].fillna(data[col].mean(), inplace=True)
+        
     # Fill Nan values of APOE4 gene with 0
     data['APOE4'] = data['APOE4'].apply(pd.to_numeric, errors = 'coerce')
     data['APOE4'].fillna(0, inplace=True)
@@ -39,7 +50,7 @@ def preprocess_adni(input_path, output_path):
 
 if __name__ == '__main__':
     input_path = '../data/TADPOLE_D1_D2.csv'
-    output_path = '../data/TADPOLE_D1_D2_proc.csv'
+    output_path = '../data/TADPOLE_D1_D2_proc1.csv'
     preprocess_adni(input_path, output_path)
 
 """

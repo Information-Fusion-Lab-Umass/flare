@@ -9,3 +9,4 @@ matplotlib==2.2.3
 ipython==7.4.0
 scikit_learn==0.20.3
 PyYAML==5.1
+imageio==2.5.0

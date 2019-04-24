@@ -61,7 +61,7 @@ class Trajectory:
     def __init__(self, visits):
         self.visits = {}
         for visit in visits:
-            self.visits[visit.visit_number] = visit
+            self.visits[visit.visit_id] = visit
         self.length = len(self.visits)
 
         # calculate tau and T values for the trajectory
@@ -82,7 +82,7 @@ class Visit:
     '''
     def __init__(self, df):
         self.visit_code = df['VISCODE']
-        self.visit_number = int(df['VISNUM'])
+        self.visit_id = int(df['VISNUM'])
 
         self.data = {}
         self.data['covariates'] = self.get_covariates(df)

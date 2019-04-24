@@ -3,6 +3,7 @@ import torch
 from sklearn.metrics import confusion_matrix
 import matplotlib
 matplotlib.use('Agg')
+import os
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 
@@ -41,4 +42,101 @@ def confmatrix_dx(ypred, y, num_classes):
     cmat = confusion_matrix(y, y_pred, labels=list(range(num_classes)))
     cmat = cmat/(np.sum(cmat, axis=1)[:,np.newaxis]+0.001)
     return cmat
+
+class LossVals:
+    def __init__(self, num_epochs, validation_period, num_T):
+        self.num_epochs = int(num_epochs)
+        self.validation_period = validation_period
+        self.num_T = int(num_T)
+
+        # Train Loss
+        self.train_loss_T = {}
+        for loss_type in ['clfLoss', 'auxLoss', 'totalLoss']:
+            self.train_loss_T[loss_type] = np.zeros((num_epochs, num_T))
+        self.train_loss = {}
+        for loss_type in ['clfLoss', 'auxLoss', 'totalLoss']:
+            self.train_loss[loss_type] = np.zeros((num_epochs))
+
+        # Validation Loss
+        self.num_val = int(num_epochs / validation_period)
+        self.val_loss_T = {}
+        for loss_type in ['clfLoss', 'auxLoss', 'totalLoss']:
+            self.val_loss_T[loss_type] = np.zeros((self.num_val, num_T))
+        self.val_loss = {}
+        for loss_type in ['clfLoss', 'auxLoss', 'totalLoss']:
+            self.val_loss[loss_type] = np.zeros((self.num_val))
+
+        self.iterations = {
+                'train': np.zeros((num_T)),
+                'val': np.zeros((num_T))
+                }
+        self.loss_T = {
+                'train': self.train_loss_T,
+                'val': self.val_loss_T
+                }
+        self.loss = {
+                'train': self.train_loss,
+                'val': self.val_loss
+                }
+
+    def update_T(self, data_type, loss, epoch, idx, step):
+        clfLoss = float(loss[0])/step
+        auxLoss = float(loss[1])/step
+        totalLoss = clfLoss + auxLoss
+        self.iterations[data_type][idx] = step
+        self.loss_T[data_type]['clfLoss'][epoch, idx] = clfLoss
+        self.loss_T[data_type]['auxLoss'][epoch, idx] = auxLoss
+        self.loss_T[data_type]['totalLoss'][epoch, idx] = totalLoss
+
+    def update(self, data_type, epoch):
+        iterations = self.iterations[data_type]
+        sum_iterations = np.sum(iterations)
+
+        for loss_type in ['clfLoss', 'auxLoss', 'totalLoss']:
+            lossval = self.loss_T[data_type][loss_type][epoch, :]
+            self.loss[data_type][loss_type][epoch] = \
+                    iterations.dot(lossval)/sum_iterations
+
+    def plot_graphs(self, path):
+        xaxis = np.arange(self.num_epochs)
+        # Train Graph : comparison of aux, clf and total losses
+        plt.figure()
+        plt.plot(xaxis, self.train_loss['clfLoss'], c = 'b', label = 'Classifier loss')
+        plt.plot(xaxis, self.train_loss['auxLoss'], c = 'r', label = 'Auxiliary loss')
+        plt.plot(xaxis, self.train_loss['totalLoss'], c = 'g', label = 'Total loss')
+        plt.legend()
+        plt.title('Train Loss : Classifier, Auxiliary and Total')
+        plt.savefig(os.path.join(path, 'train_loss_1.png'), dpi = 300)
+        plt.close()
+
+        # Train Graph : comparison of datagen losses
+        plt.figure()
+        colors = ['b', 'r', 'g', 'c', 'k', 'm']
+        for T in range(self.num_T):
+            plt.plot(xaxis, self.train_loss_T['totalLoss'][:, T], c = colors[T], label = 'T = '+str(T+2))
+        plt.legend()
+        plt.title('Train Loss : Total Loss of datagens')
+        plt.savefig(os.path.join(path, 'train_loss_2.png'), dpi = 300)
+        plt.close()
+
+        # Val Graph : comparison of aux, clf and total losses
+        plt.figure()
+        plt.plot(xaxis, self.val_loss['clfLoss'], c = 'b', label = 'Classifier loss')
+        plt.plot(xaxis, self.val_loss['auxLoss'], c = 'r', label = 'Auxiliary loss')
+        plt.plot(xaxis, self.val_loss['totalLoss'], c = 'g', label = 'Total loss')
+        plt.legend()
+        plt.title('Train Loss : Classifier, Auxiliary and Total')
+        plt.savefig(os.path.join(path, 'val_loss_1.png'), dpi = 300)
+        plt.close()
+
+        # Val Graph : comparison of datagen losses
+        plt.figure()
+        for T in range(self.num_T):
+            plt.plot(xaxis, self.val_loss_T['totalLoss'][:, T], c = colors[T], label = 'T = '+str(T+2))
+        plt.legend()
+        plt.title('Train Loss : Total Loss of datagens')
+        plt.savefig(os.path.join(path, 'val_loss_2.png'), dpi = 300)
+        plt.close()       
+
+
 
