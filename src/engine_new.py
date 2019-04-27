@@ -179,8 +179,7 @@ class Engine:
                     self.optm.step()
                     clfLoss_T += float(clfloss)
                     auxLoss_T += float(auxloss)
-                    if step == 5:
-                        break
+
                 # Store the Loss
                 loss_vals.update_T('train', [clfLoss_T, auxLoss_T], \
                         epoch, idx, step + 1)
@@ -203,8 +202,7 @@ class Engine:
                         # Store the validation loss
                         clfLoss_T += float(clfloss)
                         auxLoss_T += float(auxloss)
-                        if step == 5:
-                            break
+
                     # Store the Loss
                     loss_vals.update_T('val', [clfLoss_T, auxLoss_T], \
                         int(epoch/validation_period), idx, step + 1)

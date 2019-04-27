@@ -17,7 +17,8 @@ scripts/errors
 scripts/misc
 
 notebooks/
-outputs/
-outputs/debug
+/* outputs/ */
+/* outputs/debug */
+*.pth
 
 src/.engine.py.swp 
