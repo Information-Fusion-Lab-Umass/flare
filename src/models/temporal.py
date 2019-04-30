@@ -70,6 +70,14 @@ class forecastRNN(nn.Module):
         x_pred = x_all_gaps[range(bsize), gap, :]
         #  print('output shape : ',x_pred.shape)
         lossval += self.loss(x_pred, x_final)
+        lossval = torch.clamp(lossval, min = -3, max = 3)
+        #  if lossval.data.numpy() > 10:
+        #      print('lossvals = ', self.loss(x_pred, x_final).data.numpy(),
+        #              lossval.data.numpy(),
+        #              x_final.data.numpy().min(),
+        #              x_final.data.numpy().max(),
+        #              x_pred.data.numpy().min(),
+        #              x_pred.data.numpy().max())
         return x_pred, lossval
 
 class RNN(nn.Module):

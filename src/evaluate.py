@@ -113,13 +113,15 @@ class LossVals:
         plt.figure()
         colors = ['b', 'r', 'g', 'c', 'k', 'm']
         for T in range(self.num_T):
-            plt.plot(xaxis, self.train_loss_T['totalLoss'][:, T], c = colors[T], label = 'T = '+str(T+2))
+            plt.plot(xaxis, self.train_loss_T['totalLoss'][:, T], \
+                    c = colors[T], label = 'T = '+str(T+2))
         plt.legend()
         plt.title('Train Loss : Total Loss of datagens')
         plt.savefig(os.path.join(path, 'train_loss_2.png'), dpi = 300)
         plt.close()
 
         # Val Graph : comparison of aux, clf and total losses
+        xaxis = np.arange(len(self.val_loss['clfLoss']))
         plt.figure()
         plt.plot(xaxis, self.val_loss['clfLoss'], c = 'b', label = 'Classifier loss')
         plt.plot(xaxis, self.val_loss['auxLoss'], c = 'r', label = 'Auxiliary loss')
@@ -132,7 +134,8 @@ class LossVals:
         # Val Graph : comparison of datagen losses
         plt.figure()
         for T in range(self.num_T):
-            plt.plot(xaxis, self.val_loss_T['totalLoss'][:, T], c = colors[T], label = 'T = '+str(T+2))
+            plt.plot(xaxis, self.val_loss_T['totalLoss'][:, T], \
+                    c = colors[T], label = 'T = '+str(T+2))
         plt.legend()
         plt.title('Train Loss : Total Loss of datagens')
         plt.savefig(os.path.join(path, 'val_loss_2.png'), dpi = 300)

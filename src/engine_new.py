@@ -2,6 +2,7 @@ import numpy as np
 import os
 import pandas as pd
 from tqdm import tqdm
+from time import time
 import torch
 import torch.nn as nn
 import yaml
@@ -98,6 +99,7 @@ class Model(nn.Module):
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN':
             x_forecast, lossval = self.model_temporal(x_feat, x_time_data)
+            #  print('auxloss = ', lossval.data.numpy())
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
       
@@ -140,7 +142,6 @@ class Engine:
             exp_dir, num_epochs, log_period=100, \
             ckpt_period=100, validation_period = 100, save_model=False):
         
-        print('Training ...')
         loss_vals = evaluate.LossVals(
                 num_epochs,
                 validation_period,
@@ -165,8 +166,10 @@ class Engine:
                 params[key] = [p[i].clone() for i in range(len(p))]
 
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
+
             lossval = 0.0; count = 0
             for idx, datagen in enumerate(datagen_train):
+                t = time()
                 clfLoss_T = 0.0 ; auxLoss_T = 0.0
                 for step, (x, y) in enumerate(datagen):
                     self.optm.zero_grad() 
@@ -180,6 +183,11 @@ class Engine:
                     clfLoss_T += float(clfloss)
                     auxLoss_T += float(auxloss)
 
+                    if step == 5:
+                        break
+                print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
+                        format(epoch, idx, step, time() - t))
+
                 # Store the Loss
                 loss_vals.update_T('train', [clfLoss_T, auxLoss_T], \
                         epoch, idx, step + 1)
@@ -189,7 +197,6 @@ class Engine:
             unittest.change_in_params(params, self.model_params)
  
             # VALIDATION ------------------------------------
-            print('Validation Loss')
             if epoch % validation_period == 0:
                 self.model.eval()
                 for idx, datagen in enumerate(datagen_val):
@@ -199,9 +206,14 @@ class Engine:
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
                         obj = clfloss + auxloss
+                        #  print('val = ',clfloss.data.numpy(), auxloss.data.numpy(), \
+                        #          obj.data.numpy())
                         # Store the validation loss
                         clfLoss_T += float(clfloss)
                         auxLoss_T += float(auxloss)
+
+                        if step == 5:
+                            break
 
                     # Store the Loss
                     loss_vals.update_T('val', [clfLoss_T, auxLoss_T], \
