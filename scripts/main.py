@@ -64,31 +64,9 @@ def main(config_file):
         print('Val data : ')
         model.test(datagen_val, exp_dir, 'val')
 
-    return datagen_train, datagen_val
-
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
-    dgt, dgv = main(args.config)
-
-    #  print('\n Train dataloader')
-    #  for epoch in range(2):
-    #      for i, datagen_T in enumerate(dgt):
-    #          num_samples = 0
-    #          for x, y in datagen_T:
-    #              num_samples += len(y)
-    #          print('T = {}, N = {}'.format(i + 2, num_samples))
-    #
-    #  print('\n Val dataloader')
-    #  for i, datagen_T in enumerate(dgv):
-    #      num_samples = 0
-    #      for x, y in datagen_T:
-    #          num_samples += len(y)
-    #      print('T = {}, N = {}'.format(i + 2, num_samples))
-
-    
-
-    
-
+    main(args.config)
 

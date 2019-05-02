@@ -69,14 +69,7 @@ class Model(nn.Module):
         x_cov_data = data_batch['covariates']
         x_long_data = data_batch['test_scores']
         x_time_data = data_batch['tau']
-        #  print(x_img_data.is_cuda, x_cov_data.is_cuda, x_long_data.is_cuda, x_time_data.is_cuda)
-        #  print(next(self.model_image.parameters()).is_cuda, \
-        #          next(self.model_cov.parameters()).is_cuda, \
-        #          next(self.model_long.parameters()).is_cuda, \
-        #          next(self.model_temporal.parameters()).is_cuda, \
-        #          next(self.model_task.parameters()).is_cuda)
         (B, T, _) = x_img_data.shape
-        #  print('img : ', x_img_data.data.numpy().min(), x_img_data.data.numpy().max())
 
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
@@ -86,7 +79,6 @@ class Model(nn.Module):
         if self.fusion == 'concat_feature':
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T, -1)
-            #  print('img feat : ', x_img_feat.data.numpy().min(), x_img_feat.data.numpy().max())
 
             # Get longitudinal features : x_long_feat: (B, T-1, Fl)
             x_long_data = x_long_data.view(B*(T), -1)
@@ -117,12 +109,7 @@ class Model(nn.Module):
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN':
-            #  print('feat : ', x_feat.cpu().data.numpy().min(), \
-            #          x_feat.cpu().data.numpy().max())
-            #  print('\n')
             x_forecast, lossval = self.model_temporal(x_feat, x_time_data)
-            #  print(x_forecast.is_cuda, lossval.is_cuda, x_feat.is_cuda, x_time_data.is_cuda)
-            #  print('auxloss = ', lossval.data.numpy())
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
       
@@ -204,9 +191,6 @@ class Engine:
                     clfLoss_T += float(clfloss)
                     auxLoss_T += float(auxloss)
 
-                    #  if step == 10:
-                    #      break
-                print('\n')
                 if epoch == 0:
                     print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
                             format(epoch, idx, step, time() - t))
@@ -228,7 +212,6 @@ class Engine:
                     clfLoss_T = 0.0 ; auxLoss_T = 0.0
                     for step, (x, y) in enumerate(datagen):
                         # Feed Forward
-                        #  print(step, x['img_features'].size(), y.size())
                         x = {k : v.to(self.device) for k, v in x.items()}
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
@@ -242,11 +225,6 @@ class Engine:
                     if epoch == 0:
                         print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
                                 format(epoch, idx, step, time() - t))
-
-
-                        #  if step == 10:
-                        #      break
-                    print('\n')
 
                     # Store the Loss
                     loss_vals.update_T('val', [clfLoss_T, auxLoss_T], \
@@ -293,8 +271,6 @@ class Engine:
                     y_pred = torch.cat((y_pred, y_pred_batch), 0)
                     y = torch.cat((y, y_batch), 0)
                     tau = torch.cat((tau, x_batch['tau']), 0)
-                #  if step == 50:
-                #      break
 
             tau = tau.cpu().data.numpy()
             for t in range(numT - idx):

@@ -39,29 +39,20 @@ class forecastRNN(nn.Module):
         return nn.MSELoss()(ypred, y)*1./nelt
 
     def forward(self, x, t): 
-        #  print('in fore RNN ', x.shape)
         x_final = x[:, -1, :]
         x = x[:, :-1, :]
         (bsize, T, nfeat) = x.shape
-        #  print('Input feat shape = ', x.shape)
-        #  print('Output shape = ', x_final.shape)
         # Forward pass through the RNN
         h = self.rnn(x)[0]
         # Forward pass through the featue prediction model
         h = h.contiguous().view(bsize*T, nfeat)
         y = self.autoenc(h).view(bsize, T, nfeat)
         h = h.view(bsize, T, nfeat)
-        #  print(h.is_cuda, y.is_cuda, x.is_cuda)
-        #  print('RNN output = {}, feat pred module output = {}'.format\
-        #          (h.shape, y.shape))
-        #  print(h.min(), h.max(), y.min(), y.max(), x.min(), x.max())
+
         # Calculate the loss
         lossval = self.loss(y[:,:-1,:], x[:,1:,:]) if T!=1 \
                 else torch.tensor(0.).to(self.device)
-        #  print('Loss vals = ', lossval)
-        #  gap = (t[:,-1] - t[:,-2]).view(-1, 1)
         gap = t.view(-1, 1)
-        #  print('Gaps = ', gap.shape, gap.min(), gap.max())
         
         x_hat = y[:, -1, :]
         h_hat = h[:, -1, :]
@@ -77,24 +68,7 @@ class forecastRNN(nn.Module):
             x_all_gaps[:, t_pred, :] = x_hat
         gap = (gap - 1)[:,0].long()
         x_pred = x_all_gaps[range(bsize), gap, :]
-        #  print(x_pred.is_cuda, gap.is_cuda, x_all_gaps.is_cuda,
-        #  print('output shape : ',x_pred.shape)
         lossval += self.loss(x_pred, x_final)
-        #  print(lossval.data.numpy(),
-        #          x_pred.data.numpy().min(),
-        #          x_pred.data.numpy().max(),
-        #          x.data.numpy().min(),
-        #          x.data.numpy().max(),
-        #          x_final.data.numpy().min(),
-        #          x_final.data.numpy().max())
-        #  lossval = torch.clamp(lossval, min = -3, max = 3)
-        #  if lossval.data.numpy() > 10:
-        #      print('lossvals = ', self.loss(x_pred, x_final).data.numpy(),
-        #              lossval.data.numpy(),
-        #              x_final.data.numpy().min(),
-        #              x_final.data.numpy().max(),
-        #              x_pred.data.numpy().min(),
-        #              x_pred.data.numpy().max())
         return x_pred, lossval
 
 class RNN(nn.Module):
