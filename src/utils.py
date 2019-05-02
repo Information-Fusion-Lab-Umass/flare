@@ -20,12 +20,12 @@ def create_dirs(paths):
         if os.path.exists(path)==False:
             os.mkdir(path)
 
-def one_hot(labels, C=5):
+def one_hot(labels, device, C = 5):
     N = len(labels)
     labels_onehot = torch.zeros([N, C], dtype=torch.float)
     labels = torch.squeeze(labels) - 1
     labels_onehot[torch.arange(N), labels.type(torch.long)] = 1
-    return labels_onehot
+    return labels_onehot.to(device)
 
 # Data utils
 def is_consec(seq):

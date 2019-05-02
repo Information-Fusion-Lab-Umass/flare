@@ -138,8 +138,8 @@ class LossVals:
         plt.plot(xaxis, self.val_loss['auxLoss'], c = 'r', label = 'Auxiliary loss')
         plt.plot(xaxis, self.val_loss['totalLoss'], c = 'g', label = 'Total loss')
         plt.legend()
-        plt.title('Train Loss : Classifier, Auxiliary and Total')
-        plt.savefig(os.path.join(path, 'val_loss_1.png'), dpi = 300)
+        plt.title('Test Loss : Classifier, Auxiliary and Total')
+        plt.savefig(os.path.join(path, 'test_loss_1.png'), dpi = 300)
         plt.close()
 
         # Val Graph : comparison of datagen losses
@@ -148,7 +148,7 @@ class LossVals:
             plt.plot(xaxis, self.val_loss_T['totalLoss'][:, T], \
                     c = colors[T], label = 'T = '+str(T+2))
         plt.legend()
-        plt.title('Train Loss : Total Loss of datagens')
-        plt.savefig(os.path.join(path, 'val_loss_2.png'), dpi = 300)
+        plt.title('Test Loss : Total Loss of datagens')
+        plt.savefig(os.path.join(path, 'test_loss_2.png'), dpi = 300)
         plt.close()       
 

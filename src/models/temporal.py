@@ -98,7 +98,7 @@ class forecastRNN(nn.Module):
         return x_pred, lossval
 
 class RNN(nn.Module):
-    def __init__(self, num_input, num_timesteps):
+    def __init__(self, device, num_input, num_timesteps):
         super(RNN, self).__init__()
         self.T = 1 if num_timesteps==0 else num_timesteps
         self.rnn = nn.RNN(input_size = num_input,

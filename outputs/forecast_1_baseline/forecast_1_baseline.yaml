@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_1
+exp_id: forecast_1_baseline
 output_dir: &output ../outputs
 train_model: True
 test_model: True
@@ -25,14 +25,14 @@ model:
         num_input: 656
         num_output: 1000
     module_temporal: 
-        name: forecastRNN
+        name: rnn
         num_input: 520
         num_timesteps: *T 
     module_forecast:
         name: append_time
     module_task:
         name: dx
-        num_input: 520
+        num_input: 525
         num_classes: 3 
     fusion: concat_feature
 
