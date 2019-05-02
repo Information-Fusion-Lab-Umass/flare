@@ -40,7 +40,7 @@ def main(config_file):
             pickle.dump(data, f)
     print('Data Loaded : ', time()-t)
     print('Basic Data Stats:')
-    print('Number of patients = ', len(data))
+    print('Number of patients = ', len(data) - 2)
 
     # Datagens
     t = time()
@@ -55,14 +55,14 @@ def main(config_file):
     if config['train_model']:
         print('Training the model ...')
         model.train(datagen_train, datagen_val, exp_dir, **config['train'])
-    #
-    #  # Test the model
-    #  if config['test_model']:
-    #      print('Testing the model ...')
-    #      print('Train data : ')
-    #      model.test(data_train, exp_dir, 'train1', **config['test'])
-    #      print('Val data : ')
-    #      model.test(data_val, exp_dir, 'val1', **config['test'])
+
+    # Test the model
+    if config['test_model']:
+        print('Testing the model ...')
+        print('Train data : ')
+        model.test(datagen_train, exp_dir, 'train')
+        print('Val data : ')
+        model.test(datagen_val, exp_dir, 'val')
 
     return datagen_train, datagen_val
 

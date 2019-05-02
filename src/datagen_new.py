@@ -4,26 +4,32 @@ import itertools
 import pandas as pd
 import torch
 from torch.utils import data
+from tqdm import tqdm
+import sys
 
 from src import patient
 
-def get_data(path, min_visits = 1, only_consecutive = True):
+def get_data(path, min_visits = 1, only_consecutive = True, data_split = 0.8):
     data_feat = pd.read_csv(path, dtype = object)
     id_list = list(set(data_feat.PTID.values))
     data = {}
-    for pid in id_list:
+    for pid in tqdm(id_list):
         data_pid = data_feat[data_feat.PTID==pid]
         data_pid = patient.Patient(pid, data_pid, only_consecutive)
         if data_pid.num_visits >= min_visits:
             data[pid] = data_pid
+        sys.stdout.flush()
+    id_list = list(data.keys())
+    N = len(id_list)
+    num_train = int(data_split * N)
+    data['train_ids'] = id_list[:num_train]
+    data['val_ids'] = id_list[num_train:]
     return data
 
-def get_datagen(src_data, data_split, batch_size, max_visits):
-    # Split data into train and validation sets
-    N = len(src_data)
-    num_train = int(data_split * N)
-    data_train = dict(list(src_data.items())[:num_train])
-    data_val = dict(list(src_data.items())[num_train:])
+def get_datagen(src_data, batch_size, max_visits):
+
+    data_train = {key : src_data[key] for key in src_data['train_ids']}
+    data_val = {key : src_data[key] for key in src_data['val_ids']}
 
     # Get train datagenerators
     datagen_train = []
@@ -69,7 +75,6 @@ class Dataset(data.Dataset):
         return x, y
 
     def get_data(self, trajectory, key):
-        # Sort the visit ids, ignore last visit data
         visits_id = sorted(trajectory.visits)
         x = [trajectory.visits[idx].data[key] for idx in visits_id]
         x = np.vstack(x)

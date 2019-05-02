@@ -7,41 +7,52 @@ import os
 import matplotlib.pyplot as plt
 from scipy.io import savemat
 
-class cmatCell:
-    def __init__(self, cmat):
-        self.cmat = cmat
+class ConfMatrix:
+    def __init__(self, numT, num_classes):
+        self.numT = numT
+        self.num_classes = num_classes
+        self.probs = np.empty((numT, numT), dtype=object)
+        self.counts = np.empty((numT, numT), dtype=object)
 
-def get_output(cmat, exp_dir, data_name, task = 'dx', num_classes = 3):
-    (num_T, num_gap) = cmat.shape
-    if task == 'dx':
-        cmat_out = np.zeros((num_T*num_classes, num_gap*num_classes))
-        for t in range(num_T):
-            for tau in range(num_gap):
-                if cmat[t, tau] != None:
-                    cmat_out[t*num_classes:(t+1)*num_classes, \
-                            tau*num_classes:(tau+1)*num_classes] = cmat[t, tau].cmat
-        savemat(exp_dir+'/results/confmatrix_'+data_name+'.mat', {'cmat':cmat_out})
+    def update(self, T, tau, ypred, y):
+        (N, C) = ypred.shape
+        _, idx = torch.max(ypred, 1)
+        
+        y_pred = idx.data.numpy()
+        y = y.data.numpy()
+
+        counts = confusion_matrix(y, y_pred, labels=list(range(self.num_classes)))
+        probs = counts/(np.sum(counts, axis=1)[:,np.newaxis]+0.001)
+
+        self.counts[T, tau] = counts
+        self.probs[T, tau] = probs
+
+    def save(self, exp_dir, filename):
+        T, C, Tau = self.numT, self.num_classes, self.numT
+        probs = np.zeros((T*C, Tau*C))
+        counts = np.zeros((T*C, Tau*C))
+
+        for t in range(T):
+            for tau in range(Tau):
+                if isinstance(self.probs[t, tau], np.ndarray):
+                    probs[t*C:(t+1)*C, tau*C:(tau+1)*C] = self.probs[t, tau]
+                    counts[t*C:(t+1)*C, tau*C:(tau+1)*C] = self.counts[t, tau]
+        
+        savemat(
+            os.path.join(exp_dir, 'results', 'confmatrix_' + filename + '.mat'), 
+            {'probs' : probs, 'counts' : counts}
+            )
 
         fig, ax = plt.subplots()
-        im = ax.imshow(cmat_out)
-        for i in range(num_T*num_classes):
-            for j in range(num_gap*num_classes):
-                text = ax.text(j, i, round(cmat_out[i, j]*100, 1), \
+        im = ax.imshow(probs)
+        for i in range(T*C):
+            for j in range(Tau*C):
+                text = ax.text(j, i, round(probs[i, j]*100, 1), \
                         ha="center", va="center", color="w")
         ax.set_title("Confusion Matrix")
         fig.tight_layout()
-        plt.savefig(exp_dir+'/results/confmatrix_'+data_name+'.png', dpi=300)
-
-def confmatrix_dx(ypred, y, num_classes):
-    (N, C) = ypred.shape
-    _, idx = torch.max(ypred, 1)
-    
-    y_pred = idx.data.numpy()
-    y = y.data.numpy()
-
-    cmat = confusion_matrix(y, y_pred, labels=list(range(num_classes)))
-    cmat = cmat/(np.sum(cmat, axis=1)[:,np.newaxis]+0.001)
-    return cmat
+        plt.savefig(os.path.join(exp_dir, 'results', 'confmatrix_' \
+                + filename + '.png'), dpi=300)
 
 class LossVals:
     def __init__(self, num_epochs, validation_period, num_T):
@@ -140,6 +151,4 @@ class LossVals:
         plt.title('Train Loss : Total Loss of datagens')
         plt.savefig(os.path.join(path, 'val_loss_2.png'), dpi = 300)
         plt.close()       
-
-
 

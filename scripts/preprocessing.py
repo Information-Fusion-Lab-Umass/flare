@@ -29,7 +29,7 @@ def preprocess_adni(input_path, output_path):
         if('UCSFFSX' in name or 'UCSFFSL' in name):
             if(name.startswith('ST') and 'STATUS' not in name):
                 data[name] = data[name].apply(pd.to_numeric, errors = 'coerce')
-                data[name].fillna(data[name].mean(), inplace=True)
+                data[name].fillna(data[name].mean(), inplace=True)                
                 if np.sum(np.isnan(data[name].values)) > 0: 
                     all_nan_cols.append(name)
     data = data.drop(all_nan_cols, axis = 1)    
@@ -44,13 +44,23 @@ def preprocess_adni(input_path, output_path):
     # Fill Nan values of APOE4 gene with 0
     data['APOE4'] = data['APOE4'].apply(pd.to_numeric, errors = 'coerce')
     data['APOE4'].fillna(0, inplace=True)
+
+    # Normalize the image feature columns
+    train_ids = np.loadtxt('../data/patientID_train.txt', dtype = str)
+    for name in tqdm(data.columns.values):
+        if('UCSFFSX' in name or 'UCSFFSL' in name):
+            if(name.startswith('ST') and 'STATUS' not in name):
+                featcol = data[data['PTID'].isin(train_ids)][name].values
+                mean, std = np.mean(featcol), np.std(featcol)
+                data[name] = (data[name] - mean)/(std + 1e-4)
+                print(len(featcol), mean, std)
        
     # Save processed Dataframe to output_path
     data.to_csv(output_path)
 
 if __name__ == '__main__':
     input_path = '../data/TADPOLE_D1_D2.csv'
-    output_path = '../data/TADPOLE_D1_D2_proc1.csv'
+    output_path = '../data/TADPOLE_D1_D2_proc_norm.csv'
     preprocess_adni(input_path, output_path)
 
 """
