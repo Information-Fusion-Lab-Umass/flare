@@ -1,0 +1,54 @@
+# Experiment
+# new task network
+exp_id: forecast_3_featcat_proposed_10k_4_2
+output_dir: &output ../outputs
+train_model: True
+test_model: True
+
+# Data
+data:
+    path_load: ../data/data_tadpole_3.pickle
+    path_meta: ../data/metadata
+    path_images: ../../../ADNI_data/data
+    path_feat: ../data/features.csv
+    min_visits: 2
+
+datagen:
+    data_split: &data_split 0.8
+    batch_size: &bsize 128
+    num_visits: &T -1
+    feat_flag: &imgType tadpole 
+
+# Model 
+model:
+    load_model: '' #../outputs/clf_3_ipcat_5k_wt_6/checkpoints/model.pth
+    num_classes: &numcls 3
+    class_wt: [1., 1.3, 2]
+    module_image:
+        name: tadpole2
+        num_input: 692
+        num_output: 500
+    module_temporal: 
+        name: forecastRNN
+        num_input: 520
+        num_timesteps: *T 
+    module_forecast:
+        name: append_time
+    module_task:
+        name: dx
+        num_input: 520
+        num_classes: *numcls
+    fusion: concat_feature
+
+# Train 
+train:
+    num_epochs: 20000
+    save_model: True
+
+# Test
+test:
+    task: forecast
+    data_split: *data_split
+    batch_size: *bsize
+    feat_flag: *imgType
+

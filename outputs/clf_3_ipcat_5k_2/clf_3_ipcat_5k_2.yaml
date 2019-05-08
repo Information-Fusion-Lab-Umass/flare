@@ -1,0 +1,52 @@
+# Experiment
+exp_id: clf_3_ipcat_5k_2
+output_dir: &output ../outputs
+train_model: True
+test_model: True   
+
+# Data
+data:
+    path_load: ../data/data_tadpole_3.pickle
+    path_meta: ../data/metadata
+    path_images: ../../../ADNI_data/data
+    path_feat: ../data/features.csv
+    min_visits: 2
+
+datagen:
+    data_split: &data_split 0.8
+    batch_size: &bsize 64
+    num_visits: &T 0        
+    feat_flag: &imgType tadpole 
+
+# Model 
+model:
+    load_model: '' # ../outputs/clf_3_ipcat_5k_1/checkpoints/model.pth
+    num_classes: &numcls 3
+    class_wt: [1., 1., 1.]
+    module_image:
+        name:  multimodal # tadpole1
+        num_input: 699 # 692
+        num_output: 500
+    module_temporal: 
+        name: rnn
+        num_input: 500
+        num_timesteps: *T 
+    module_forecast:
+        name: append_time
+    module_task:
+        name: dx
+        num_input: 500
+        num_classes: *numcls
+
+# Train 
+train:
+    num_epochs: 5000
+    save_model: True
+
+# Test
+test:
+    task: classify
+    data_split: *data_split
+    batch_size: *bsize
+    feat_flag: *imgType
+

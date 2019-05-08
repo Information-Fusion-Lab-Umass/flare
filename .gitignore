@@ -17,7 +17,6 @@ scripts/errors
 scripts/misc
 
 notebooks/
-outputs/
 outputs/debug
 
 src/.engine.py.swp 
