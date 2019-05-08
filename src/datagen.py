@@ -66,12 +66,19 @@ class Dataset(data.Dataset):
 
     def __getitem__(self, index):
         trajectory = self.trajectories[index]
+
         x = {}
         x['tau'] = trajectory.tau
         x['img_features'] = self.get_data(trajectory, 'img_features')
         x['covariates'] = self.get_data(trajectory, 'covariates')
         x['test_scores'] = self.get_data(trajectory, 'test_scores')
-        y = self.get_data(trajectory, 'labels')[-1, 0]
+
+        x['pid'] = trajectory.pid
+        x['trajectory_id'] = np.array(trajectory.trajectory_id)
+        x['flag_ad'] = trajectory.flag_ad
+        x['first_occurance_ad'] = trajectory.first_occurance_ad
+
+        y = self.get_data(trajectory, 'labels')[-1, 0]        
         return x, y
 
     def get_data(self, trajectory, key):

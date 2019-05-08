@@ -259,7 +259,7 @@ class Engine:
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
 
         for idx, datagen in enumerate(datagen_test):
-            for step, (x_batch, y_batch) in enumerate(datagen):
+            for step, (x_batch, y_batch) in tqdm(enumerate(datagen)):
                 x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
                 y_batch = y_batch.to(self.device)
                 y_pred_batch, _ = self.model(x_batch)

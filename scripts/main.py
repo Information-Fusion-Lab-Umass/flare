@@ -11,6 +11,7 @@ from time import time
 import pickle
 import numpy as np
 from src import datagen, utils, engine
+os.environ['CUDA_VISIBLE_DEVICES']=''
 
 def main(config_file):
     
@@ -64,9 +65,25 @@ def main(config_file):
         print('Val data : ')
         model.test(datagen_val, exp_dir, 'val')
 
+    return datagen_train, datagen_val
+
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
-    main(args.config)
+    dgt, dgv = main(args.config)
+
+    '''
+    for datagen in dgt:
+        for x, y in datagen:
+            print(x.keys())
+            print('y : ', y)
+            print('tau : ', x['tau'])
+            print('pid : ', x['pid'])
+            print('traj_id : ', x['trajectory_id'])
+            print('flag_ad : ', x['flag_ad'])
+            print('first_occurance_ad : ', x['first_occurance_ad'])
+            break
+        break
+    '''
 

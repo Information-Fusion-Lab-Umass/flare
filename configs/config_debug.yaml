@@ -1,0 +1,45 @@
+# Experiment
+exp_id: debug
+output_dir: &output ../outputs
+train_model: False
+test_model: True
+
+# Data
+data:
+    path_load: ../data/data_norm_stats.pickle
+    path: ../data/TADPOLE_D1_D2_proc_norm.csv
+    min_visits: 2
+    only_consecutive: True
+    data_split: &data_split 0.8
+
+datagen:
+    batch_size: &bsize 4
+    max_visits: &T 6 
+
+# Model 
+model:
+    load_model: '../outputs/forecast_1/checkpoints/model_ep20.pth'
+    class_wt: [1, 1.3, 2]
+    module_image:
+        name: tadpole
+        num_input: 656
+        num_output: 1000
+    module_temporal: 
+        name: forecastRNN
+        num_input: 520
+        num_timesteps: *T 
+    module_forecast:
+        name: append_time
+    module_task:
+        name: dx
+        num_input: 520
+        num_classes: 3 
+    fusion: concat_feature
+
+# Train 
+train:
+    num_epochs: 20
+    log_period: 1
+    ckpt_period: 5
+    validation_period: 1
+    save_model: True

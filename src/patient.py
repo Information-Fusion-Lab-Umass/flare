@@ -26,6 +26,9 @@ class Patient:
     """
     def __init__(self, pid, df, only_consecutive = True):
         self.patient_id = pid
+        self.flag_ad = False
+        self.first_occurance_ad = -1
+
         self.visits_id = []
         self.trajectories_id = {}
         self.visits = {}
@@ -37,8 +40,20 @@ class Patient:
             self.visits_id.append(visit_id)
             self.visits[visit_id] = Visit(row)
 
+        # Check if the patient develops AD
+        for visit_id in self.visits_id:
+            if self.visits[visit_id].data['labels'][0] == 2:
+                self.flag_ad = True
+                self.first_occurance_ad = visit_id
+                break
+
         self.num_visits = len(self.visits_id)
         self.visits_id = sorted(self.visits_id)
+        patient_info = {
+                'pid' : self.patient_id,
+                'flag_ad' : self.flag_ad,
+                'first_occurance_ad' : self.first_occurance_ad
+                }
 
         # Obtain trajectory data 
         for i in range(2, self.num_visits + 1):
@@ -47,10 +62,13 @@ class Patient:
                 self.trajectories_id[i] = utils.return_consec(\
                         self.trajectories_id[i])
             self.trajectories[i] = [
-                    Trajectory([self.visits[tt] for tt in t]) 
+                    Trajectory(
+                        [self.visits[tt] for tt in t], 
+                        t, patient_info
+                        ) 
                     for t in self.trajectories_id[i]
                     ]
-    
+        
 class Trajectory:
     '''
     A Trajectory is a series of visits
@@ -58,7 +76,7 @@ class Trajectory:
     Input:
         init_vis (list): A list of tuples. Each tuple is a visit entry.
     '''
-    def __init__(self, visits):
+    def __init__(self, visits, trajectory_id, patient_info):
         self.visits = {}
         for visit in visits:
             self.visits[visit.visit_id] = visit
@@ -68,6 +86,12 @@ class Trajectory:
         self.T = self.length - 1
         keys = sorted(list(self.visits.keys()))
         self.tau = keys[-1] - keys[-2]
+
+        # Additional information
+        self.pid = patient_info['pid']
+        self.flag_ad = patient_info['flag_ad'] 
+        self.first_occurance_ad = patient_info['first_occurance_ad']
+        self.trajectory_id = trajectory_id
 
 class Visit:
     '''

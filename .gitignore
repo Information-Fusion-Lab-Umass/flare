@@ -16,7 +16,6 @@ scripts/run_output
 scripts/errors
 scripts/misc
 
-notebooks/
 /* outputs/ */
 /* outputs/debug */
 *.pth
