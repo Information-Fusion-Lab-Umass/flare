@@ -2,7 +2,7 @@
 exp_id: debug
 output_dir: &output ../outputs
 train_model: False
-test_model: False
+test_model: True
 
 # Data
 data:
@@ -18,7 +18,7 @@ datagen:
 
 # Model 
 model:
-    load_model: ''
+    load_model: '../outputs/forecast_1/checkpoints/model_ep20.pth'
     class_wt: [1, 1.3, 2]
     module_image:
         name: tadpole

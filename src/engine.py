@@ -136,7 +136,9 @@ class Engine:
 
         # Load the model
         if load_model != '':
-            self.model.load_state_dict(torch.load(load_model))
+            self.model.load_state_dict(
+                    torch.load(load_model, map_location = self.device)
+                    )
 
         #  self.model.cuda()
         self.model_params = {
