@@ -9,7 +9,8 @@ import sys
 
 from src import patient
 
-def get_data(path, min_visits = 1, only_consecutive = True, data_split = 0.8):
+def get_data(path, train_ids_path, test_ids_path, 
+        min_visits = 1, only_consecutive = True, data_split = 0.8):
     data_feat = pd.read_csv(path, dtype = object)
     id_list = list(set(data_feat.PTID.values))
     data = {}
@@ -19,17 +20,17 @@ def get_data(path, min_visits = 1, only_consecutive = True, data_split = 0.8):
         if data_pid.num_visits >= min_visits:
             data[pid] = data_pid
         sys.stdout.flush()
-    id_list = list(data.keys())
-    N = len(id_list)
-    num_train = int(data_split * N)
-    data['train_ids'] = id_list[:num_train]
-    data['val_ids'] = id_list[num_train:]
+
+    train_ids = np.loadtxt(train_ids_path, dtype = str)
+    test_ids = np.loadtxt(test_ids_path, dtype = str)
+    data['train_ids'] = train_ids
+    data['test_ids'] = test_ids
     return data
 
 def get_datagen(src_data, batch_size, max_visits):
 
     data_train = {key : src_data[key] for key in src_data['train_ids']}
-    data_val = {key : src_data[key] for key in src_data['val_ids']}
+    data_val = {key : src_data[key] for key in src_data['test_ids']}
 
     # Get train datagenerators
     datagen_train = []
