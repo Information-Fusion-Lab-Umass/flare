@@ -64,6 +64,10 @@ def main(config_file):
         #  model.test(datagen_train, exp_dir, 'train')
         print('Val data : ')
         model.test(datagen_val, exp_dir, 'val')
+        #  stats = model.test_stats(datagen_val)
+
+    #  with open('stats.pickle', 'wb') as f:
+        #  pickle.dump(stats, f)
 
     return datagen_train, datagen_val
 
@@ -72,6 +76,7 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
     dgt, dgv = main(args.config)
+
 
     '''
     for datagen in dgt:
@@ -86,4 +91,3 @@ if __name__=='__main__':
             break
         break
     '''
-
