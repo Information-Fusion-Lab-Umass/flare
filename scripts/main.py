@@ -60,8 +60,8 @@ def main(config_file):
     # Test the model
     if config['test_model']:
         print('Testing the model ...')
-        #  print('Train data : ')
-        #  model.test(datagen_train, exp_dir, 'train')
+        print('Train data : ')
+        model.test(datagen_train, exp_dir, 'train')
         print('Val data : ')
         model.test(datagen_val, exp_dir, 'val')
         #  stats = model.test_stats(datagen_val)
