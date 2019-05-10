@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_visit22
+exp_id: debug_visit22
 output_dir: &output ../outputs
 train_model: True
 test_model: True
@@ -40,7 +40,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 20
+    num_epochs: 1
     log_period: 1
     ckpt_period: 5
     validation_period: 1
