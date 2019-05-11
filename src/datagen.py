@@ -87,6 +87,3 @@ class Dataset(data.Dataset):
         x = [trajectory.visits[idx].data[key] for idx in visits_id]
         x = np.vstack(x)
         return torch.from_numpy(x).float()
-
-
-

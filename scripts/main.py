@@ -72,6 +72,9 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
     dgt, dgv = main(args.config)
+    
+    with open('../data/datagen_val.pickle','wb') as f:
+        pickle.dump(dgv,f)
 
     '''
     for datagen in dgt:
