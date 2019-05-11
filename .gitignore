@@ -16,8 +16,9 @@ scripts/run_output
 scripts/errors
 scripts/misc
 
-/* outputs/ */
+outputs/
 /* outputs/debug */
 *.pth
 
 src/.engine.py.swp 
+

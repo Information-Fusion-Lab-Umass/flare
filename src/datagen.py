@@ -29,8 +29,10 @@ def get_data(path, train_ids_path, test_ids_path,
 
 def get_datagen(src_data, batch_size, max_visits):
 
-    data_train = {key : src_data[key] for key in src_data['train_ids']}
-    data_val = {key : src_data[key] for key in src_data['test_ids']}
+    data_train = {key : src_data[key] \
+            for key in src_data['train_ids'] if key in src_data}
+    data_val = {key : src_data[key] \
+            for key in src_data['test_ids'] if key in src_data}
 
     # Get train datagenerators
     datagen_train = []

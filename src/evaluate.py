@@ -1,10 +1,11 @@
 import numpy as np
 import torch 
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, f1_score
 import matplotlib
 matplotlib.use('Agg')
 import os
 import matplotlib.pyplot as plt
+import pylab
 from scipy.io import savemat
 
 class ConfMatrix:
@@ -13,6 +14,7 @@ class ConfMatrix:
         self.num_classes = num_classes
         self.probs = np.empty((numT, numT), dtype=object)
         self.counts = np.empty((numT, numT), dtype=object)
+        self.f1 = np.zeros((numT, numT))
 
     def update(self, T, tau, ypred, y):
         (N, C) = ypred.shape
@@ -21,11 +23,14 @@ class ConfMatrix:
         y_pred = idx.data.numpy()
         y = y.data.numpy()
 
-        counts = confusion_matrix(y, y_pred, labels=list(range(self.num_classes)))
+        counts = confusion_matrix(y, y_pred, labels = list(range(self.num_classes)))
         probs = counts/(np.sum(counts, axis=1)[:,np.newaxis]+0.001)
+        f1 = f1_score(y, y_pred, labels = list(range(self.num_classes)), 
+                average = 'micro')
 
         self.counts[T, tau] = counts
         self.probs[T, tau] = probs
+        self.f1[T, tau] = f1
 
     def save(self, exp_dir, filename):
         T, C, Tau = self.numT, self.num_classes, self.numT
@@ -43,15 +48,40 @@ class ConfMatrix:
             {'probs' : probs, 'counts' : counts}
             )
 
+        # Probability image
         fig, ax = plt.subplots()
         im = ax.imshow(probs)
         for i in range(T*C):
             for j in range(Tau*C):
                 text = ax.text(j, i, round(probs[i, j]*100, 1), \
-                        ha="center", va="center", color="w")
-        ax.set_title("Confusion Matrix")
+                        ha="center", va="center", color="w", fontsize = 8)
+        ax.set_title("Confusion Matrix (Probabilities)")
         fig.tight_layout()
         plt.savefig(os.path.join(exp_dir, 'results', 'confmatrix_' \
+                + filename + '.png'), dpi=300)
+        
+        # Counts image
+        fig, ax = plt.subplots()
+        im = ax.imshow(probs)
+        for i in range(T*C):
+            for j in range(Tau*C):
+                text = ax.text(j, i, int(counts[i, j]), \
+                        ha="center", va="center", color="w", fontsize = 8)
+        ax.set_title("Confusion Matrix (Frequencies)")
+        fig.tight_layout()
+        plt.savefig(os.path.join(exp_dir, 'results', 'confmatrix_counts_' \
+                + filename + '.png'), dpi=300)
+
+        # Save F1 scores
+        fig, ax = plt.subplots()
+        col_labels = ['tau = ' + str(i+1) for i in range(T)]
+        row_labels = ['T = ' + str(i+1) for i in range(T)]
+        ax.set_title('F1 scores')
+        fig.tight_layout()
+        ax.axis('off')
+        ax.table(cellText = np.round(self.f1, 4), colLabels = col_labels, \
+                rowLabels = row_labels, loc = 'center')
+        plt.savefig(os.path.join(exp_dir, 'results', 'f1_' \
                 + filename + '.png'), dpi=300)
 
 class LossVals:
@@ -108,7 +138,7 @@ class LossVals:
             self.loss[data_type][loss_type][epoch] = \
                     iterations.dot(lossval)/sum_iterations
 
-    def plot_graphs(self, path):
+    def plot_graphs(self, path, num_graphs = 6):
         xaxis = np.arange(self.num_epochs)
         # Train Graph : comparison of aux, clf and total losses
         plt.figure()
@@ -122,7 +152,8 @@ class LossVals:
 
         # Train Graph : comparison of datagen losses
         plt.figure()
-        colors = ['b', 'r', 'g', 'c', 'k', 'm']
+        cm = plt.get_cmap('nipy_spectral')
+        colors = [cm(1.*i/num_graphs) for i in range(num_graphs)]
         for T in range(self.num_T):
             plt.plot(xaxis, self.train_loss_T['totalLoss'][:, T], \
                     c = colors[T], label = 'T = '+str(T+2))

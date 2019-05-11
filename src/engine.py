@@ -180,18 +180,22 @@ class Engine:
                 t = time()
                 clfLoss_T = 0.0 ; auxLoss_T = 0.0
                 for step, (x, y) in enumerate(datagen):
-                    self.optm.zero_grad()
-                    # Feed Forward
-                    x = {k : v.to(self.device) for k, v in x.items()}
-                    y = y.to(self.device)
-                    y_pred, auxloss = self.model(x)
-                    clfloss = self.model.loss(y_pred, y)
-                    obj = clfloss + auxloss
-                    # Train the model
-                    obj.backward()
-                    self.optm.step()
-                    clfLoss_T += float(clfloss)
-                    auxLoss_T += float(auxloss)
+                    if len(y) > 1:
+                        self.optm.zero_grad()
+                        # Feed Forward
+                        x = {k : v.to(self.device) for k, v in x.items()}
+                        y = y.to(self.device)
+                        y_pred, auxloss = self.model(x)
+                        clfloss = self.model.loss(y_pred, y)
+                        obj = clfloss + auxloss
+                        # Train the model
+                        obj.backward()
+                        self.optm.step()
+                        clfLoss_T += float(clfloss)
+                        auxLoss_T += float(auxloss)
+
+                        #  if step == 3:
+                        #      break
 
                 if epoch == 0:
                     print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
@@ -223,6 +227,8 @@ class Engine:
                         clfLoss_T += float(clfloss)
                         auxLoss_T += float(auxloss)
                         sys.stdout.flush()
+                        #  if step == 3:
+                        #      break
 
                     if epoch == 0:
                         print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
@@ -251,7 +257,8 @@ class Engine:
         with open(os.path.join(exp_dir, 'logs/loss.pickle'), 'wb') as f:
             pickle.dump(loss_vals, f)
 
-        loss_vals.plot_graphs(os.path.join(exp_dir, 'logs'))
+        loss_vals.plot_graphs(os.path.join(exp_dir, 'logs'), \
+                num_graphs = len(datagen_train))
 
 
     def test(self, datagen_test, exp_dir, filename):
@@ -261,11 +268,13 @@ class Engine:
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
 
         for idx, datagen in enumerate(datagen_test):
-            for step, (x_batch, y_batch) in tqdm(enumerate(datagen)):
+            for step, (x_batch, y_batch) in enumerate(datagen):
                 x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
                 y_batch = y_batch.to(self.device)
                 y_pred_batch, _ = self.model(x_batch)
                 y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
+                #  print(idx)
+                #  print(y_pred_batch)
 
                 if step == 0:
                     y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
@@ -282,6 +291,7 @@ class Engine:
         cnf_matrix.save(exp_dir, filename)
 
     def test_stats(self, datagen_test):
+<<<<<<< HEAD
 
         self.model.eval()
         numT = len(datagen_test)
@@ -314,4 +324,36 @@ class Engine:
             data.append(dataT)
 
         return data
+=======
+>>>>>>> 941d8df3de4c11eadbba80178aca043592cbd00d
 
+        self.model.eval()
+        numT = len(datagen_test)
+        data = []
+        for idx, datagen in enumerate(datagen_test):
+            for step, (x_batch, y_batch) in enumerate(datagen):
+
+                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
+                y_batch = y_batch.to(self.device)
+                y_pred_batch, _ = self.model(x_batch)
+                y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
+                if step == 0:
+                    y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
+                    pid = x_batch['pid']
+                    trajectory_id = x_batch['trajectory_id']
+                else:
+                    y_pred = torch.cat((y_pred, y_pred_batch), 0)
+                    y = torch.cat((y, y_batch), 0)
+                    tau = torch.cat((tau, x_batch['tau']), 0)
+                    pid = torch.cat((pid,x_batch['pid']),0)
+                    trajectory_id = torch.cat((trajectory_id, \
+                            x_batch['trajectory_id']),0)
+
+            dataT = {}
+            dataT['y'] = y
+            dataT['y_pred'] = y_pred
+            dataT['tau'] = tau
+            dataT['pid'] = pid
+            dataT['trajectory_id'] = trajectory_id
+            data.append(dataT)
+        return data
