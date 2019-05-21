@@ -16,7 +16,6 @@ scripts/run_output
 scripts/errors
 scripts/misc
 
-outputs/
 /* outputs/debug */
 *.pth
 
