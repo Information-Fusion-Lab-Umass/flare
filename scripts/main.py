@@ -11,7 +11,7 @@ from time import time
 import pickle
 import numpy as np
 from src import datagen, utils, engine
-os.environ['CUDA_VISIBLE_DEVICES']=''
+#  os.environ['CUDA_VISIBLE_DEVICES']=''
 
 def main(config_file):
     

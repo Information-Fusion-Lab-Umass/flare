@@ -291,42 +291,6 @@ class Engine:
         cnf_matrix.save(exp_dir, filename)
 
     def test_stats(self, datagen_test):
-<<<<<<< HEAD
-
-        self.model.eval()
-        numT = len(datagen_test)
-        data = []
-
-        for idx, datagen in enumerate(datagen_test):
-            for step, (x_batch, y_batch) in tqdm(enumerate(datagen)):
-                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
-                y_batch = y_batch.to(self.device)
-                y_pred_batch, _ = self.model(x_batch)
-                y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
-
-                if step == 0:
-                    y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
-                    pid = x_batch['pid']
-                    trajectory_id = x_batch['trajectory_id']
-                else:
-                    y_pred = torch.cat((y_pred, y_pred_batch), 0)
-                    y = torch.cat((y, y_batch), 0)
-                    tau = torch.cat((tau, x_batch['tau']), 0)
-                    pid = torch.cat((pid,x_batch['pid']),0)
-                    trajectory_id = torch.cat((trajectory_id,x_batch['trajectory_id']),0)
-
-            dataT = {}
-            dataT['y'] = y
-            dataT['y_pred'] = y_pred
-            dataT['tau'] = tau
-            dataT['pid'] = pid
-            dataT['trajectory_id'] = trajectory_id
-            data.append(dataT)
-
-        return data
-=======
->>>>>>> 941d8df3de4c11eadbba80178aca043592cbd00d
-
         self.model.eval()
         numT = len(datagen_test)
         data = []
