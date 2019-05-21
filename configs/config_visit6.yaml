@@ -1,7 +1,7 @@
 # Experiment
-exp_id: forecast_visit6
+exp_id: forecast_visit6_debug
 output_dir: &output ../outputs
-train_model: True
+train_model: False
 test_model: True
 
 # Data
@@ -15,12 +15,12 @@ data:
     data_split: &data_split 0.8
 
 datagen:
-    batch_size: &bsize 64
+    batch_size: &bsize 32
     max_visits: &T 6
 
 # Model 
 model:
-    load_model: '' #../outputs/forecast_visit22/checkpoints/model_ep16.pth'
+    load_model: ../outputs/forecast_1/checkpoints/model_ep20.pth
     class_wt: [1, 1.3, 2]
     module_image:
         name: tadpole
