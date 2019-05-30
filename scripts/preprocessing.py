@@ -15,6 +15,8 @@ def preprocess_adni(input_path, output_path):
             'm24': 4,
             'm36': 5
             }
+    visit_codes = ['bl', 'm03', 'm06', 'm12', 'm18', 'm24', 'm30', 'm36', 'm42', 'm48', 'm54', 'm60', 'm66', 'm72', 'm78', 'm84', 'm90', 'm96', 'm102', 'm108', 'm114', 'm120']
+    visit_id = {key: i for i, key in enumerate(visit_codes)}
     data['VISNUM'] = data['VISCODE'].apply(lambda x: visit_id[x] \
             if x in visit_id else -1)
 
