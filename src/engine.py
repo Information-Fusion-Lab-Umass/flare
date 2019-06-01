@@ -124,12 +124,7 @@ class Model(nn.Module):
         return ypred, lossval
 
 class Engine:
-<<<<<<< HEAD
     def __init__(self, model_config):
-=======
-    def __init__(self, class_wt, model_config):
-
->>>>>>> 8fc590680b7d4c67bc4316f06694423fccb7b714
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
 
