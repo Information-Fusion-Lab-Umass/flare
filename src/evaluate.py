@@ -51,10 +51,11 @@ class ConfMatrix:
         # Probability image
         fig, ax = plt.subplots()
         im = ax.imshow(probs)
-        #  for i in range(T*C):
-        #      for j in range(Tau*C):
-        #          text = ax.text(j, i, round(probs[i, j]*100, 1), \
-        #                  ha="center", va="center", color="w", fontsize = 8)
+
+        for i in range(T*C):
+          for j in range(Tau*C):
+              text = ax.text(j, i, round(probs[i, j]*100, 1), \
+                      ha="center", va="center", color="w", fontsize = 8)
         ax.set_title("Confusion Matrix (Probabilities)")
         fig.tight_layout()
         plt.savefig(os.path.join(exp_dir, 'results', 'confmatrix_' \

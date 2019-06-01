@@ -44,7 +44,7 @@ class forecastRNN(nn.Module):
         (bsize, T, nfeat) = x.shape
         # Forward pass through the RNN
         h = self.rnn(x)[0]
-        # Forward pass through the featue prediction model
+        # Forward pass through the feature prediction model
         h = h.contiguous().view(bsize*T, nfeat)
         y = self.autoenc(h).view(bsize, T, nfeat)
         h = h.view(bsize, T, nfeat)
@@ -104,5 +104,3 @@ class LSTM(nn.Module):
             return x[:, 0, :] 
         x = self.lstm(x)[0]
         return x[:, -1, :]
-
-
