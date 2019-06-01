@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_6_8
+exp_id: forecast_6_6
 output_dir: &output ../outputs
 train_model: True
 test_model: True
@@ -17,7 +17,7 @@ data:
 datagen:
     batch_size: &bsize 16
     max_visits: &T 6
-    max_T : 8
+    max_T : 6
 
 # Model 
 model:
@@ -41,7 +41,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 40
+    num_epochs: 20
     log_period: 1
     ckpt_period: 5
     validation_period: 1

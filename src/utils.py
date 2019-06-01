@@ -44,3 +44,24 @@ def return_consec(listseq):
         if(is_consec(seq[:-1])):
             consec.append(seq)
     return consec
+
+def get_classWeights(data, ids_path):
+    train_ids = np.loadtxt(ids_path, dtype = str)
+    num_nl = 0; num_mci = 0; num_ad = 0
+    for pid in train_ids:
+        if pid in data:
+            visits = data[pid].visits
+            labels = [visits[key].data['labels'][0] for key in visits]
+            num_nl += labels.count(0)
+            num_mci += labels.count(1)
+            num_ad += labels.count(2)
+    max_count = max(num_nl, num_mci, num_ad)
+    print(num_nl, num_mci, num_ad, max_count)
+    return [max_count/num_nl, max_count/num_mci, max_count/num_ad]
+            
+
+
+
+
+
+

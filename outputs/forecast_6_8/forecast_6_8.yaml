@@ -41,7 +41,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 40
+    num_epochs: 20
     log_period: 1
     ckpt_period: 5
     validation_period: 1

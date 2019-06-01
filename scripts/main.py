@@ -47,9 +47,11 @@ def main(config_file):
     datagen_train, datagen_val = \
             datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
+    class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
+    print(class_wt)
 
     # Define Classification model
-    model = engine.Engine(config['model'])
+    model = engine.Engine(class_wt, config['model'])
 
     # Train the model
     if config['train_model']:
@@ -76,9 +78,21 @@ if __name__=='__main__':
     args = parser.parse_args()
     dgt, dgv = main(args.config)
     
-    with open('../data/datagen_val.pickle','wb') as f:
-        pickle.dump(dgv,f)
+    #  with open('../data/datagen_val.pickle','wb') as f:
+    #      pickle.dump(dgv,f)
+    #
+    #  for i, datagen in enumerate(dgt):
+    #      num_traj = 0
+    #      minval = 100; maxval = 0
+    #      for k, (x, y) in enumerate(datagen):
+    #          num_traj += x['img_features'].size()[0]
+    #          traj_id = x['trajectory_id'].data.numpy()
+    #          minval = min(minval, np.min(traj_id))
+    #          maxval = max(maxval, np.max(traj_id))
+    #      print('T = {}, traj = {}, min = {}, max = {}'.\
+            #  format(i, num_traj, minval, maxval))
 
+<<<<<<< HEAD
     '''
     for datagen in dgt:
         for x, y in datagen:
@@ -92,3 +106,12 @@ if __name__=='__main__':
             break
         break
     '''
+=======
+            #  print(x.keys())
+            #  print('y : ', y)
+            #  print('tau : ', x['tau'])
+            #  print('pid : ', x['pid'])
+            #  print('traj_id : ', x['trajectory_id'])
+            #  print('flag_ad : ', x['flag_ad'])
+            #  print('first_occurance_ad : ', x['first_occurance_ad'])
+>>>>>>> 8fc590680b7d4c67bc4316f06694423fccb7b714

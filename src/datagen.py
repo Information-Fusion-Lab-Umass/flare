@@ -27,7 +27,12 @@ def get_data(path, train_ids_path, test_ids_path,
     data['test_ids'] = test_ids
     return data
 
+<<<<<<< HEAD
 def get_datagen(src_data, batch_size, max_visits):
+=======
+def get_datagen(src_data, batch_size, max_visits, max_T):
+
+>>>>>>> 8fc590680b7d4c67bc4316f06694423fccb7b714
     data_train = {key : src_data[key] \
             for key in src_data['train_ids'] if key in src_data}
     data_val = {key : src_data[key] \
@@ -36,25 +41,27 @@ def get_datagen(src_data, batch_size, max_visits):
     # Get train data generators
     datagen_train = []
     for T in range(2, max_visits + 1):
-        dataset = Dataset(data_train, T)
+        dataset = Dataset(data_train, T, max_T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_train.append(dataloader)
 
     # Get validation data generators
     datagen_val = []
     for T in range(2, max_visits + 1):
-        dataset = Dataset(data_val, T)
+        dataset = Dataset(data_val, T, max_T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_val.append(dataloader)
     return datagen_train, datagen_val
 
 class Dataset(data.Dataset):
-    def __init__(self, data, T):
+    def __init__(self, data, T, max_T):
         self.T = T
         self.data = data
 
         # Collect trajectories from all patients with key = T
-        self.trajectories = [self.data[pid].trajectories[T] \
+        filt_traj = lambda x: [traj for traj in x \
+                            if max(list(traj.visits.keys())) < max_T]
+        self.trajectories = [filt_traj(self.data[pid].trajectories[T]) \
                 for pid in self.data \
                 if T in self.data[pid].trajectories]     
         self.trajectories = sum(self.trajectories, [])

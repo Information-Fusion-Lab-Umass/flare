@@ -3,7 +3,7 @@ import numpy as np
 from tqdm import tqdm
 import ipdb
 
-def preprocess_adni(input_path, output_path):
+def preprocess_adni(input_path, output_path, pid_train):
     data = pd.read_csv(input_path, dtype = object)
     
     # Add VISNUM column
@@ -15,6 +15,10 @@ def preprocess_adni(input_path, output_path):
             'm24': 4,
             'm36': 5
             }
+    visit_codes = ['bl', 'm06', 'm12', 'm18', 'm24', 'm30', 'm36', \
+            'm42', 'm48', 'm54', 'm60', 'm66', 'm72', 'm78', 'm84', 'm90', \
+            'm96', 'm102', 'm108', 'm114', 'm120']
+    visit_id = {key: i for i, key in enumerate(visit_codes)}
     data['VISNUM'] = data['VISCODE'].apply(lambda x: visit_id[x] \
             if x in visit_id else -1)
 
@@ -46,7 +50,7 @@ def preprocess_adni(input_path, output_path):
     data['APOE4'].fillna(0, inplace=True)
 
     # Normalize the image feature columns
-    train_ids = np.loadtxt('../data/patientID_train.txt', dtype = str)
+    train_ids = np.loadtxt(pid_train, dtype = str)
     for name in tqdm(data.columns.values):
         if('UCSFFSX' in name or 'UCSFFSL' in name):
             if(name.startswith('ST') and 'STATUS' not in name):
@@ -60,8 +64,9 @@ def preprocess_adni(input_path, output_path):
 
 if __name__ == '__main__':
     input_path = '../data/TADPOLE_D1_D2.csv'
-    output_path = '../data/TADPOLE_D1_D2_proc_norm.csv'
-    preprocess_adni(input_path, output_path)
+    output_path = '../data/TADPOLE_D1_D2_proc_norm_all_1.csv'
+    pid_train = '../data/patientID_train_all.txt'
+    preprocess_adni(input_path, output_path, pid_train)
 
 """
 bl      1737
