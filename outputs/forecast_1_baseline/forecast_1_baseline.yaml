@@ -6,8 +6,10 @@ test_model: True
 
 # Data
 data:
-    path_load: ../data/data_norm.pickle
+    path_load: ../data/data_norm_redo.pickle
     path: ../data/TADPOLE_D1_D2_proc_norm.csv
+    train_ids_path: ../data/patientID_train.txt
+    test_ids_path: ../data/patientID_test.txt
     min_visits: 2
     only_consecutive: True
     data_split: &data_split 0.8

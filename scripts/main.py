@@ -6,7 +6,7 @@ import os
 import yaml
 import argparse
 from shutil import copyfile
-import ipdb
+#import ipdb
 from time import time
 import pickle
 import numpy as np
@@ -14,7 +14,6 @@ from src import datagen, utils, engine
 #  os.environ['CUDA_VISIBLE_DEVICES']=''
 
 def main(config_file):
-    
     # Parser config file
     with open(config_file) as f:
         config = yaml.load(f)
@@ -79,7 +78,6 @@ if __name__=='__main__':
     
     with open('../data/datagen_val.pickle','wb') as f:
         pickle.dump(dgv,f)
-
 
     '''
     for datagen in dgt:

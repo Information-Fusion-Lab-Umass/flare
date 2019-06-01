@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_visit6_newWt
+exp_id: forecast_visit6_Joie
 output_dir: &output ../outputs
 train_model: True
 test_model: True
@@ -8,8 +8,6 @@ test_model: True
 data:
     path_load: ../data/data_norm_all.pickle
     path: ../data/TADPOLE_D1_D2_proc_norm_all.csv
-    train_ids_path: ../data/patientID_train_all.txt
-    test_ids_path: ../data/patientID_test_all.txt
     min_visits: 2
     only_consecutive: True
     data_split: &data_split 0.8
@@ -21,7 +19,7 @@ datagen:
 # Model 
 model:
     load_model: '' #../outputs/forecast_1/checkpoints/model_ep20.pth
-    class_wt: [1.36, 1, 1.78] # [1, 1.3, 2]
+    class_wt: [1, 1.3, 2] #[1.36, 1, 1.78]
     module_image:
         name: tadpole
         num_input: 656
@@ -40,7 +38,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 20
+    num_epochs: 40
     log_period: 1
     ckpt_period: 5
     validation_period: 1
