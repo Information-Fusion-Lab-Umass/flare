@@ -1,8 +1,8 @@
 # Experiment
-exp_id: forecast_6_8
+exp_id: forecast_visit6_control_1
 output_dir: &output ../outputs
-train_model: True
-test_model: True
+train_model: False
+test_model: False
 
 # Data
 data:
@@ -17,7 +17,7 @@ data:
 datagen:
     batch_size: &bsize 16
     max_visits: &T 6
-    max_T : 8
+    max_T : 7
 
 # Model 
 model:

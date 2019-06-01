@@ -56,7 +56,6 @@ class Model(nn.Module):
         self.model_task = eval(model_dict[model_task_name])(**module_task)
         self.model_task = self.model_task.to(device)
 
-        # Class weights for loss
         self.class_wt = torch.tensor(class_wt).float().to(device)
 
     def loss(self, y_pred, y):
@@ -125,14 +124,14 @@ class Model(nn.Module):
         return ypred, lossval
 
 class Engine:
-    def __init__(self, model_config):
+    def __init__(self, class_wt, model_config):
 
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
 
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.use_cuda else "cpu")
-        self.model = Model(self.device, **model_config).to(self.device)
+        self.model = Model(self.device, class_wt, **model_config).to(self.device)
 
         # Load the model
         if load_model != '':
