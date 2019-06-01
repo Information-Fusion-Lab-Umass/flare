@@ -92,21 +92,6 @@ if __name__=='__main__':
     #      print('T = {}, traj = {}, min = {}, max = {}'.\
             #  format(i, num_traj, minval, maxval))
 
-<<<<<<< HEAD
-    '''
-    for datagen in dgt:
-        for x, y in datagen:
-            print(x.keys())
-            print('y : ', y)
-            print('tau : ', x['tau'])
-            print('pid : ', x['pid'])
-            print('traj_id : ', x['trajectory_id'])
-            print('flag_ad : ', x['flag_ad'])
-            print('first_occurance_ad : ', x['first_occurance_ad'])
-            break
-        break
-    '''
-=======
             #  print(x.keys())
             #  print('y : ', y)
             #  print('tau : ', x['tau'])
@@ -114,4 +99,4 @@ if __name__=='__main__':
             #  print('traj_id : ', x['trajectory_id'])
             #  print('flag_ad : ', x['flag_ad'])
             #  print('first_occurance_ad : ', x['first_occurance_ad'])
->>>>>>> 8fc590680b7d4c67bc4316f06694423fccb7b714
+

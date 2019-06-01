@@ -27,12 +27,7 @@ def get_data(path, train_ids_path, test_ids_path,
     data['test_ids'] = test_ids
     return data
 
-<<<<<<< HEAD
-def get_datagen(src_data, batch_size, max_visits):
-=======
 def get_datagen(src_data, batch_size, max_visits, max_T):
-
->>>>>>> 8fc590680b7d4c67bc4316f06694423fccb7b714
     data_train = {key : src_data[key] \
             for key in src_data['train_ids'] if key in src_data}
     data_val = {key : src_data[key] \
