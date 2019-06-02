@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_6_6_iter
+exp_id: forecast_6_6
 output_dir: &output ../outputs
 train_model: False
 test_model: True
@@ -46,5 +46,4 @@ train:
     ckpt_period: 5
     validation_period: 1
     save_model: True
-    num_iter: 2
-
+    num_iter: 5

@@ -1,6 +1,6 @@
 import numpy as np
 import torch 
-from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, f1_score, precision_recall_fscore_support
 import matplotlib
 matplotlib.use('Agg')
 import os
@@ -15,6 +15,15 @@ class ConfMatrix:
         self.probs = np.empty((numT, numT), dtype=object)
         self.counts = np.empty((numT, numT), dtype=object)
         self.f1 = np.zeros((numT, numT))
+        self.precision = np.zeros((numT, numT))
+        self.recall = np.zeros((numT, numT))
+
+    def set_vals(self, agg_metrics):
+        self.probs = agg_metrics['accuracy']
+        self.counts = agg_metrics['counts']
+        self.f1 = agg_metrics['f1']
+        self.precision = agg_metrics['precision']
+        self.recall = agg_metrics['recall']
 
     def update(self, T, tau, ypred, y):
         (N, C) = ypred.shape
@@ -27,10 +36,13 @@ class ConfMatrix:
         probs = counts/(np.sum(counts, axis=1)[:,np.newaxis]+0.001)
         f1 = f1_score(y, y_pred, labels = list(range(self.num_classes)), 
                 average = 'micro')
+        precision, recall, _, _ = precision_recall_fscore_support(y, y_pred, labels = list(range(self.num_classes)), average = 'micro')
 
         self.counts[T, tau] = counts
         self.probs[T, tau] = probs
         self.f1[T, tau] = f1
+        self.precision[T,tau] = precision
+        self.recall[T,tau] = recall
 
     def save(self, exp_dir, filename):
         T, C, Tau = self.numT, self.num_classes, self.numT
@@ -60,6 +72,7 @@ class ConfMatrix:
         fig.tight_layout()
         plt.savefig(os.path.join(exp_dir, 'results', 'confmatrix_' \
                 + filename + '.png'), dpi=300)
+        plt.close(fig)
         
         # Counts image
         fig, ax = plt.subplots()
@@ -72,6 +85,7 @@ class ConfMatrix:
         fig.tight_layout()
         plt.savefig(os.path.join(exp_dir, 'results', 'confmatrix_counts_' \
                 + filename + '.png'), dpi=300)
+        plt.close(fig)
 
         # Save F1 scores
         fig, ax = plt.subplots()
@@ -84,6 +98,7 @@ class ConfMatrix:
                 rowLabels = row_labels, loc = 'center')
         plt.savefig(os.path.join(exp_dir, 'results', 'f1_' \
                 + filename + '.png'), dpi=300)
+        plt.close(fig)
 
 class LossVals:
     def __init__(self, num_epochs, validation_period, num_T):

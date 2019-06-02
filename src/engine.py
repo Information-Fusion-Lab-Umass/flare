@@ -285,6 +285,7 @@ class Engine:
                 cnf_matrix.update(idx, t, y_pred[loc].cpu(), y[loc].cpu())
 
         cnf_matrix.save(exp_dir, filename)
+        return cnf_matrix
 
     def test_stats(self, datagen_test):
         self.model.eval()

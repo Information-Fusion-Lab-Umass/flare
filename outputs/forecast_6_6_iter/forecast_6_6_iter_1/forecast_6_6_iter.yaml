@@ -47,4 +47,3 @@ train:
     validation_period: 1
     save_model: True
     num_iter: 2
-
