@@ -93,12 +93,27 @@ def calculate_averages(confmats):
     agg_metrics['recall'] = np.mean([mat.recall for mat in confmats],axis=0)
     agg_metrics['f1'] = (2*agg_metrics['precision']*agg_metrics['recall'])/(agg_metrics['precision']+agg_metrics['recall'])
     
-    accuracies = [[filter_None(item) for item in mats_T.probs] for mats_T in confmats]
+    accuracies = np.asarray([[filter_None(item) for item in mats_T.probs] for mats_T in confmats])
 
     counts = [[filter_None(item) for item in mats_T.probs] for mats_T in confmats]
 
     agg_metrics['accuracy'] = np.mean(accuracies,axis=0)
+    
+    agg_metrics['accuracy_stdev'] = stdev_confmat(accuracies)
     agg_metrics['counts'] = np.mean(counts,axis=0)
 
     return agg_metrics
 
+def stdev_confmat(accuracies):
+    '''
+    Calculates the standard deviation across the BIG confusion 
+    matrix
+    '''
+
+    T = accuracies.shape[1]
+    stdev = np.empty([T,T],dtype=object)
+    for i in range(T):
+        for j in range(T):
+            stdev[i,j] = np.std(accuracies[:,i,j],axis=0)
+    return stdev
+            
