@@ -6,19 +6,19 @@ import os
 import yaml
 import argparse
 from shutil import copyfile
-import ipdb
+#import ipdb
 from time import time
 import pickle
 import numpy as np
-from src import datagen, utils, engine
+from src import datagen, utils, engine, evaluate
 #  os.environ['CUDA_VISIBLE_DEVICES']=''
 
 def main(config_file):
-    
     # Parser config file
     with open(config_file) as f:
         config = yaml.load(f)
-
+    
+    config['train'].pop('num_iter')
     # Create experiment output directories
     exp_dir = os.path.join(config['output_dir'], config['exp_id'])
     utils.create_dirs([config['output_dir'], exp_dir,
@@ -100,3 +100,4 @@ if __name__=='__main__':
             #  print('traj_id : ', x['trajectory_id'])
             #  print('flag_ad : ', x['flag_ad'])
             #  print('first_occurance_ad : ', x['first_occurance_ad'])
+

@@ -3,6 +3,7 @@ import nibabel as nib
 import numpy as np
 import torch
 import pickle
+from src import evaluate
 
 def load_img(path, view='axial'):
     if(path[-3:] == 'nii'):
@@ -58,10 +59,61 @@ def get_classWeights(data, ids_path):
     max_count = max(num_nl, num_mci, num_ad)
     print(num_nl, num_mci, num_ad, max_count)
     return [max_count/num_nl, max_count/num_mci, max_count/num_ad]
+
+# Aggregate results utils
+
+def filter_None(mat_list):
+    '''
+    Filters out None Type elements in a list of matrices using
+    list comprehension
+
+    Input:
+        mat_list (list): list of arrays where some entries
+                may be None
+
+    Returns:
+        list of matrices with 'None' elements replaced with 0
+
+    '''            
+    return [item if np.any(item) else 0 for item in mat_list]
+
+def calculate_averages(confmats):
+    '''
+    Take a list of confusion matrices from multiple experiments and returns average f1 scores and accuracies
+
+    Input:
+        confmats (list): list of confusion matrices
+
+    Returns:
+        agg_metrics (dict): dictionary of average metrics: accuracy, f1 score, precision, recall, and counts.
+    '''
+    agg_metrics = {}
+
+    agg_metrics['precision'] = np.mean([mat.precision for mat in confmats],axis=0)
+    agg_metrics['recall'] = np.mean([mat.recall for mat in confmats],axis=0)
+    agg_metrics['f1'] = (2*agg_metrics['precision']*agg_metrics['recall'])/(agg_metrics['precision']+agg_metrics['recall'])
+    
+    accuracies = np.asarray([[filter_None(item) for item in mats_T.probs] for mats_T in confmats])
+
+    counts = [[filter_None(item) for item in mats_T.probs] for mats_T in confmats]
+
+    agg_metrics['accuracy'] = np.mean(accuracies,axis=0)
+    
+    agg_metrics['accuracy_stdev'] = stdev_confmat(accuracies)
+    agg_metrics['counts'] = np.mean(counts,axis=0)
+
+    return agg_metrics
+
+def stdev_confmat(accuracies):
+    '''
+    Calculates the standard deviation across the BIG confusion 
+    matrix
+    '''
+
+    T = accuracies.shape[1]
+    stdev = np.empty([T,T],dtype=object)
+    for i in range(T):
+        for j in range(T):
+            stdev[i,j] = np.std(accuracies[:,i,j],axis=0)
+    return stdev
             
-
-
-
-
-
-

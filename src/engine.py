@@ -6,7 +6,7 @@ from time import time
 import torch
 import torch.nn as nn
 import yaml
-import ipdb
+#import ipdb
 import pickle
 from src import models, utils, evaluate, unittest
 import matplotlib
@@ -125,7 +125,6 @@ class Model(nn.Module):
 
 class Engine:
     def __init__(self, class_wt, model_config):
-
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
 
@@ -145,6 +144,7 @@ class Engine:
                 'temporal': list(self.model.model_temporal.parameters()),
                 'task': list(self.model.model_task.parameters())
                 }
+
         if self.model.fusion == 'concat_feature':
             self.model_params['long'] = list(self.model.model_long.parameters())
             self.model_params['cov'] = list(self.model.model_cov.parameters())
@@ -173,7 +173,6 @@ class Engine:
                 params[key] = [p[i].clone() for i in range(len(p))]
 
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
-
             lossval = 0.0; count = 0
             for idx, datagen in enumerate(datagen_train):
                 t = time()
@@ -259,9 +258,7 @@ class Engine:
         loss_vals.plot_graphs(os.path.join(exp_dir, 'logs'), \
                 num_graphs = len(datagen_train))
 
-
     def test(self, datagen_test, exp_dir, filename):
-
         self.model.eval()
         numT = len(datagen_test)
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
@@ -288,6 +285,7 @@ class Engine:
                 cnf_matrix.update(idx, t, y_pred[loc].cpu(), y[loc].cpu())
 
         cnf_matrix.save(exp_dir, filename)
+        return cnf_matrix
 
     def test_stats(self, datagen_test):
         self.model.eval()

@@ -1,13 +1,15 @@
 # Experiment
-exp_id: forecast_1_baseline
+exp_id: forecast_1_baseline_30_1
 output_dir: &output ../outputs
 train_model: True
 test_model: True
 
 # Data
 data:
-    path_load: ../data/data_norm.pickle
+    path_load: ../data/data_norm_redo.pickle
     path: ../data/TADPOLE_D1_D2_proc_norm.csv
+    train_ids_path: ../data/patientID_train.txt
+    test_ids_path: ../data/patientID_test.txt
     min_visits: 2
     only_consecutive: True
     data_split: &data_split 0.8
@@ -38,7 +40,7 @@ model:
 
 # Train 
 train:
-    num_epochs: 20
+    num_epochs: 30
     log_period: 1
     ckpt_period: 5
     validation_period: 1

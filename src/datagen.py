@@ -28,27 +28,26 @@ def get_data(path, train_ids_path, test_ids_path,
     return data
 
 def get_datagen(src_data, batch_size, max_visits, max_T):
-
     data_train = {key : src_data[key] \
             for key in src_data['train_ids'] if key in src_data}
     data_val = {key : src_data[key] \
             for key in src_data['test_ids'] if key in src_data}
 
-    # Get train datagenerators
+    # Get train data generators
     datagen_train = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_train, T, max_T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_train.append(dataloader)
 
-    # Get validation datagenerators
+    # Get validation data generators
     datagen_val = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_val, T, max_T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_val.append(dataloader)
-
     return datagen_train, datagen_val
+
 
 class Dataset(data.Dataset):
     def __init__(self, data, T, max_T):
