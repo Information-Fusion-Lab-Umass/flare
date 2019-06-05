@@ -48,7 +48,6 @@ def get_datagen(src_data, batch_size, max_visits, max_T):
         datagen_val.append(dataloader)
     return datagen_train, datagen_val
 
-
 class Dataset(data.Dataset):
     def __init__(self, data, T, max_T):
         self.T = T

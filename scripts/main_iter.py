@@ -96,6 +96,8 @@ def main(config_file):
         agg_mat = evaluate.ConfMatrix(max_T-1,num_classes)
         agg_mat.set_vals(agg_metrics)
         agg_mat.save(main_exp_dir,'agg')
+        with open(os.path.join(main_exp_dir,'results/agg_metrics_dict.pickle'),'wb') as f:
+            pickle.dump(agg_metrics,f)
 
     return datagen_train, datagen_val
 
@@ -105,19 +107,20 @@ if __name__=='__main__':
     args = parser.parse_args()
     dgt, dgv = main(args.config)
     
-    #  with open('../data/datagen_val.pickle','wb') as f:
-    #      pickle.dump(dgv,f)
-    #
-    #  for i, datagen in enumerate(dgt):
-    #      num_traj = 0
-    #      minval = 100; maxval = 0
-    #      for k, (x, y) in enumerate(datagen):
-    #          num_traj += x['img_features'].size()[0]
-    #          traj_id = x['trajectory_id'].data.numpy()
-    #          minval = min(minval, np.min(traj_id))
-    #          maxval = max(maxval, np.max(traj_id))
-    #      print('T = {}, traj = {}, min = {}, max = {}'.\
-            #  format(i, num_traj, minval, maxval))
+    # with open('../data/datagen_val.pickle','wb') as f:
+    #    pickle.dump(dgv,f)
+    
+    for i, datagen in enumerate(dgv):
+        num_traj = 0
+        minval = np.inf; maxval = np.NINF
+        for k, (x, y) in enumerate(datagen):
+            num_traj += x['img_features'].size()[0]
+            traj_id = x['trajectory_id'].data.numpy()
+            img_features = x['img_features'].data.numpy()
+            minval = min(minval, np.min(img_features))
+            maxval = max(maxval, np.max(img_features))
+        print('T = {}, traj = {}, min = {}, max = {}'.\
+              format(i, num_traj, minval, maxval))
 
             #  print(x.keys())
             #  print('y : ', y)
@@ -126,4 +129,3 @@ if __name__=='__main__':
             #  print('traj_id : ', x['trajectory_id'])
             #  print('flag_ad : ', x['flag_ad'])
             #  print('first_occurance_ad : ', x['first_occurance_ad'])
-

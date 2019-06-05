@@ -8,6 +8,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --time=4-00:00:00          # HH:MM:SS
 
-python main.py --config=../configs/config_visit22.yaml
+python blowup.py
 sleep 1
 exit

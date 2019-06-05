@@ -68,6 +68,7 @@ class Model(nn.Module):
         x_cov_data = data_batch['covariates']
         x_long_data = data_batch['test_scores']
         x_time_data = data_batch['tau']
+
         (B, T, _) = x_img_data.shape
 
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
@@ -76,9 +77,15 @@ class Model(nn.Module):
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         if self.fusion == 'concat_feature':
+                
+           # print('Img Input Max: ', np.max(x_img_data.cpu().detach().numpy()))
+           # print('Img Input Min: ', np.min(np.abs(x_img_data.cpu().detach().numpy())))
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T, -1)
 
+           # print('Img Feat Max: ', np.max(x_img_feat.cpu().detach().numpy()))
+           # print('Img Feat Min: ', np.min(x_img_feat.cpu().detach().numpy()))
+            
             # Get longitudinal features : x_long_feat: (B, T-1, Fl)
             x_long_data = x_long_data.view(B*(T), -1)
             x_long_feat = self.model_long(x_long_data)
@@ -102,6 +109,8 @@ class Model(nn.Module):
         # x_feat: (B, T-1, F_i+F_l+F_c) = (B, T-1, F)
         if self.fusion == 'concat_feature':
             x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
+            # print('Feat Max: ', np.max(x_feat.cpu().detach().numpy()))
+            # print('Feat Min: ', np.min(x_feat.cpu().detach().numpy()))
         elif self.fusion == 'concat_input':
             x_feat = x_img_feat
 
@@ -220,6 +229,7 @@ class Engine:
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
+                        print('Loss value: {}, Patient ID: {}, Trajectory ID: {}'.format(clfloss.item(), x['pid'], x['trajectory_id']))
                         obj = clfloss + auxloss
                         # Store the validation loss
                         clfLoss_T += float(clfloss)
@@ -262,12 +272,16 @@ class Engine:
         self.model.eval()
         numT = len(datagen_test)
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
-
+            
+        ctr = 0
         for idx, datagen in enumerate(datagen_test):
             for step, (x_batch, y_batch) in enumerate(datagen):
                 x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
                 y_batch = y_batch.to(self.device)
-                y_pred_batch, _ = self.model(x_batch)
+                y_pred_batch, auxloss = self.model(x_batch)
+                #if(auxloss > 100):
+                #    x_max = x_batch
+                clfloss = self.model.loss(y_pred_batch,y_batch)
                 y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
                 #  print(idx)
                 #  print(y_pred_batch)
@@ -276,6 +290,44 @@ class Engine:
                     y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
                 else:
                     y_pred = torch.cat((y_pred, y_pred_batch), 0)
+                    y = torch.cat((y, y_batch), 0)
+                    tau = torch.cat((tau, x_batch['tau']), 0)
+
+            tau = tau.cpu().data.numpy()
+            for t in range(numT - idx):
+                loc = np.where(tau == t + 1)
+                cnf_matrix.update(idx, t, y_pred[loc].cpu(), y[loc].cpu())
+
+        cnf_matrix.save(exp_dir, filename)
+        return cnf_matrix
+
+    def test_MCDropout(self, datagen_test, exp_dir, filename, num_repeat):
+        self.model.eval()
+
+        for m in self.model.modules():
+            if m.__class__.__name__.startswith('Dropout'):
+                m.train()
+
+        numT = len(datagen_test)
+        cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
+
+        for idx, datagen in enumerate(datagen_test):
+            for step, (x_batch, y_batch) in enumerate(datagen):
+                y_pred_batch_agg = []
+                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
+                y_batch = y_batch.to(self.device)
+                for i in range(num_repeat):
+                    y_pred_batch, _ = self.model(x_batch)
+                    y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
+                    y_pred_batch_agg.append(y_pred_batch)
+                y_batch_avg = np.mean(y_pred_batch_agg, axis=0)
+                y_batch_std = np.std(y_pred_batch_agg, axis=0)
+                #  print(idx)
+                #  print(y_pred_batch)
+                if step == 0:
+                    y_pred, y, tau = y_batch_avg, y_batch, x_batch['tau']
+                else:
+                    y_pred = torch.cat((y_pred, y_batch_avg), 0)
                     y = torch.cat((y, y_batch), 0)
                     tau = torch.cat((tau, x_batch['tau']), 0)
 
@@ -318,3 +370,4 @@ class Engine:
             dataT['trajectory_id'] = trajectory_id
             data.append(dataT)
         return data
+

@@ -1,4 +1,4 @@
-from .image import Tadpole
+from .image import Tadpole, Tadpole_No_BN
 from .long_cov import Longitudinal, Covariate
 from .temporal import LSTM, RNN, forecastRNN
 from .forecast import AppendTime, MultiplyTime, AutoEncoder

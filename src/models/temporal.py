@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 import ipdb
+import pickle
 
 class forecastRNN(nn.Module):
     def __init__(self, device, num_input, num_timesteps):
@@ -36,10 +38,24 @@ class forecastRNN(nn.Module):
     def loss(self, ypred, y):
         nelt = ypred.nelement()
         ypred, y = ypred.to(self.device), y.to(self.device)
-        return nn.MSELoss()(ypred, y)*1./nelt
+
+       # auxloss = nn.MSELoss(reduction = 'mean')(ypred, y)*1./nelt 
+       #
+       # if(auxloss > 1000):
+       #     print('HOLA')
+       #     print('Aux Loss: {}'.format(auxloss))
+
+       # else:
+       #     print('Aux Loss: {}'.format(auxloss))
+
+        return nn.MSELoss(reduction = 'mean')(ypred, y)*1./nelt
 
     def forward(self, x, t): 
         x_final = x[:, -1, :]
+
+        print('X Max: ', np.max(x_final.cpu().detach().numpy()))
+        print('X Min: ', np.min(x_final.cpu().detach().numpy()))
+
         x = x[:, :-1, :]
         (bsize, T, nfeat) = x.shape
         # Forward pass through the RNN

@@ -1,5 +1,5 @@
 # Experiment
-exp_id: forecast_6_6_1
+exp_id: forecast_iter_debug_loss_spike_exp3_no_bn_T4
 output_dir: &output ../outputs
 train_model: True
 test_model: True
@@ -16,15 +16,16 @@ data:
 
 datagen:
     batch_size: &bsize 16
-    max_visits: &T 6
-    max_T : 6
+    max_visits: &T 4
+    max_T : 4
 
 # Model 
 model:
-    load_model: '' #'../outputs/forecast_6_6/checkpoints/model_ep20.pth'
+    load_model: '' #'/mnt/nfs/work1/mfiterau/yeahuaywu/flare/outputs/forecast_iter_debug_loss_spike_exp2/forecast_iter_debug_loss_spike_exp2_4/checkpoints/model_ep28.pth' #../outputs/forecast_6_6/checkpoints/model_ep20.pth'
+
     # class_wt: [1.36, 1, 1.78] # [1, 1.3, 2]
     module_image:
-        name: tadpole
+        name: tadpole_no_bn
         num_input: 656
         num_output: 1000
     module_temporal: 
@@ -43,7 +44,7 @@ model:
 train:
     num_epochs: 30
     log_period: 1
-    ckpt_period: 5
+    ckpt_period: 30
     validation_period: 1
     save_model: True
     num_iter: 5

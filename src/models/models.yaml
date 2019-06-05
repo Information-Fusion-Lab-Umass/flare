@@ -1,6 +1,7 @@
 # Image models
 tadpole: models.Tadpole
-    
+tadpole_no_bn: models.Tadpole_No_BN    
+
 # Multimodal models    
 multimodal: models.TadpoleFeat
 multimodal1: models.TadpoleFeat1

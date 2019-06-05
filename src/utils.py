@@ -60,6 +60,24 @@ def get_classWeights(data, ids_path):
     print(num_nl, num_mci, num_ad, max_count)
     return [max_count/num_nl, max_count/num_mci, max_count/num_ad]
 
+def batch_stats(data_batch):
+    '''
+    Prints some statistics such as max and min about the input
+    data batch used for debugging.
+    '''
+
+    batch_max_imfeat = [np.max(feat.cpu().data.numpy()) for feat in data_batch['img_features']]
+    batch_max_cogtests = [np.max(feat.cpu().data.numpy()) for feat in data_batch['test_scores']]
+    batch_max_covs = [np.max(feat.cpu().data.numpy()) for feat in data_batch['covariates']]
+
+    batch_min_imfeat = [np.min(feat.cpu().data.numpy()) for feat in data_batch['img_features']]
+    batch_min_cogtests = [np.min(feat.cpu().data.numpy()) for feat in data_batch['test_scores']]
+    batch_min_covs = [np.min(feat.cpu().data.numpy()) for feat in data_batch['covariates']]
+ 
+    print('Max of img features: {}, Min of img features: {}'.format(np.max(batch_max_imfeat), np.min(batch_min_imfeat)))
+    print('Max of test scores: {}, Min of test scores: {}'.format(np.max(batch_max_cogtests),np.min(batch_min_cogtests)))
+    print('Max of covariates: {}, Min of covariates: {}'.format(np.max(batch_max_covs), np.min(batch_min_covs)))
+
 # Aggregate results utils
 
 def filter_None(mat_list):
