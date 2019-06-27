@@ -37,14 +37,14 @@ def get_datagen(src_data, batch_size, max_visits, max_T):
     datagen_train = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_train, T, max_T)
-        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) #False, drop_last=True)
+        dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_train.append(dataloader)
 
     # Get validation data generators
     datagen_val = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_val, T, max_T)
-        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) #False, drop_last=True)
+        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
         datagen_val.append(dataloader)
     return datagen_train, datagen_val
 
