@@ -141,7 +141,7 @@ class Model(nn.Module):
                     ypred_aux = self.model_task(x_cache[:,i,:])
                     lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
             lossval /= (T-1)
-        
+      
         return ypred, self.aux_loss_scale * lossval
 
 class Engine:
@@ -199,7 +199,6 @@ class Engine:
 
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
             lossval = 0.0; count = 0
-            print("total_count, transitions to AD within the trajectory, transition_count, AD_already, AD_final")
             #list_of_data = list(enumerate(datagen_train[0]))
             #list_of_data += list(enumerate(datagen_train[1]))
             #list_of_data += list(enumerate(datagen_train[2]))
