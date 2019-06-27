@@ -132,7 +132,7 @@ class Model(nn.Module):
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
         ypred = self.model_task(x_forecast)
-        #print(x_labels, x_tau1_label)
+        
         # STEP 8: Compute Auxiliary Loss
         if self.model_temporal_name == 'forecastRNN' and self.aux_loss == "cross_entropy":
             lossval = torch.tensor(0.).to(self.device)
@@ -140,9 +140,6 @@ class Model(nn.Module):
                 for i in range(T-1):
                     ypred_aux = self.model_task(x_cache[:,i,:])
                     lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
-            #else:
-            #    ypred_aux = self.model_task(x_cache[:,0,:])
-            #    lossval += self.loss(ypred, x_tau1_label) 
             lossval /= (T-1)
         
         return ypred, self.aux_loss_scale * lossval
