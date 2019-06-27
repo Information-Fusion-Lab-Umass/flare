@@ -123,24 +123,14 @@ class forecastRNN_BPTT(nn.Module):
     def loss(self, ypred, y):
         nelt = ypred.nelement()
         ypred, y = ypred.to(self.device), y.to(self.device)
-
-       # auxloss = nn.MSELoss(reduction = 'mean')(ypred, y)*1./nelt 
-       #
-       # if(auxloss > 1000):
-       #     print('HOLA')
-       #     print('Aux Loss: {}'.format(auxloss))
-
-       # else:
-       #     print('Aux Loss: {}'.format(auxloss))
-
         return nn.MSELoss(reduction = 'mean')(ypred, y)*1./nelt
 
     def forward(self, x, t): 
         x_final = x[:, -1, :]
 
-#        print('X Max: ', np.max(x_final.cpu().detach().numpy()))
-#        print('X Min: ', np.min(x_final.cpu().detach().numpy()))
-
+        #print('X Max: ', np.max(x_final.cpu().detach().numpy()))
+        #print('X Min: ', np.min(x_final.cpu().detach().numpy()))
+        # more for auxilliary
         x = x[:, :-1, :]
         (bsize, T, nfeat) = x.shape
         # Forward pass through the RNN
@@ -149,7 +139,6 @@ class forecastRNN_BPTT(nn.Module):
         h = h.contiguous().view(bsize*T, nfeat)
         y = self.autoenc(h).view(bsize, T, nfeat)
         h = h.view(bsize, T, nfeat)
-
         # Calculate the loss
         lossval = self.loss(y[:,:-1,:], x[:,1:,:]) if T!=1 \
                 else torch.tensor(0.).to(self.device)
@@ -170,7 +159,7 @@ class forecastRNN_BPTT(nn.Module):
         gap = (gap - 1)[:,0].long()
         x_pred = x_all_gaps[range(bsize), gap, :]
         lossval += self.loss(x_pred, x_final)
-        return x_pred, lossval
+        return x_pred, lossval, y[:,:,:]
 
 class RNN(nn.Module):
     def __init__(self, device, num_input, num_timesteps):

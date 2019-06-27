@@ -5,6 +5,7 @@ import torch.nn.functional as F
 class ANN_DX(nn.Module):
     def __init__(self, num_input, num_classes):
         super(ANN_DX, self).__init__()
+        
         self.fc1 = nn.Linear(num_input, 450)
         self.bn1 = nn.BatchNorm1d(450)
 

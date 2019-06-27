@@ -37,14 +37,14 @@ def get_datagen(src_data, batch_size, max_visits, max_T):
     datagen_train = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_train, T, max_T)
-        dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
+        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) #False, drop_last=True)
         datagen_train.append(dataloader)
 
     # Get validation data generators
     datagen_val = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_val, T, max_T)
-        dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
+        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) #False, drop_last=True)
         datagen_val.append(dataloader)
     return datagen_train, datagen_val
 
@@ -75,6 +75,7 @@ class Dataset(data.Dataset):
         x['img_features'] = self.get_data(trajectory, 'img_features')
         x['covariates'] = self.get_data(trajectory, 'covariates')
         x['test_scores'] = self.get_data(trajectory, 'test_scores')
+        x['labels'] = self.get_data(trajectory, 'labels')
 
         x['pid'] = int(trajectory.pid[:3] + trajectory.pid[6:])
         x['flag_ad'] = torch.tensor(trajectory.flag_ad)
