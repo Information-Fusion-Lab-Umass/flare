@@ -12,7 +12,7 @@ class AppendTime(nn.Module):
     def forward(self, x, t):
         t = t.view(-1, 1)
         diff_t_onehot = utils.one_hot(t, self.device)
-        x = torch.cat((x, diff_t_onehot), 1) 
+        x = torch.cat((x, diff_t_onehot), 1)
         return x
 
 class MultiplyTime(nn.Module):

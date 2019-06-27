@@ -13,17 +13,20 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import sys
+import random
 #  torch.backends.cudnn.enabled = False
 
 class Model(nn.Module):
     def __init__(self, device, class_wt, module_image, module_temporal, \
-            module_forecast, module_task, fusion):
+            module_forecast, module_task, fusion, aux_loss="MSE", aux_loss_scale=1.0):
         super(Model, self).__init__()
         # Model names file
         with open('../src/models/models.yaml') as f:
             model_dict = yaml.load(f)
         self.fusion = fusion
         self.device = device
+        self.aux_loss = aux_loss #model_config.pop('aux_loss','MSE')
+        self.aux_loss_scale = aux_loss_scale
 
         # Load model: image architecture
         self.model_image_name = module_image.pop('name')
@@ -68,9 +71,9 @@ class Model(nn.Module):
         x_cov_data = data_batch['covariates']
         x_long_data = data_batch['test_scores']
         x_time_data = data_batch['tau']
-
+        x_labels = data_batch['labels']
         (B, T, _) = x_img_data.shape
-
+       
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
         x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
@@ -117,7 +120,7 @@ class Model(nn.Module):
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN':
-            x_forecast, lossval = self.model_temporal(x_feat, x_time_data)
+            x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
       
@@ -129,14 +132,27 @@ class Model(nn.Module):
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
         ypred = self.model_task(x_forecast)
-
-        return ypred, lossval
+        #print(x_labels, x_tau1_label)
+        # STEP 8: Compute Auxiliary Loss
+        if self.model_temporal_name == 'forecastRNN' and self.aux_loss == "cross_entropy":
+            lossval = torch.tensor(0.).to(self.device)
+            if T != 2:
+                for i in range(T-1):
+                    ypred_aux = self.model_task(x_cache[:,i,:])
+                    lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
+            #else:
+            #    ypred_aux = self.model_task(x_cache[:,0,:])
+            #    lossval += self.loss(ypred, x_tau1_label) 
+            lossval /= (T-1)
+        
+        return ypred, self.aux_loss_scale * lossval
 
 class Engine:
     def __init__(self, class_wt, model_config):
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
-
+        self.lr = model_config.pop('learning_rate')
+        
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.use_cuda else "cpu")
         self.model = Model(self.device, class_wt, **model_config).to(self.device)
@@ -159,7 +175,7 @@ class Engine:
             self.model_params['cov'] = list(self.model.model_cov.parameters())
 
         # Initialize the optimizer
-        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []))
+        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), lr = self.lr)
 
     def train(self, datagen_train, datagen_val, \
             exp_dir, num_epochs, log_period=100, \
@@ -183,10 +199,19 @@ class Engine:
 
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
             lossval = 0.0; count = 0
+            print("total_count, transitions to AD within the trajectory, transition_count, AD_already, AD_final")
+            #list_of_data = list(enumerate(datagen_train[0]))
+            #list_of_data += list(enumerate(datagen_train[1]))
+            #list_of_data += list(enumerate(datagen_train[2]))
+            #list_of_data += list(enumerate(datagen_train[3]))
+            #list_of_data += list(enumerate(datagen_train[4]))
+            #random.shuffle(list_of_data)
+            #if True:
             for idx, datagen in enumerate(datagen_train):
                 t = time()
                 clfLoss_T = 0.0 ; auxLoss_T = 0.0
                 for step, (x, y) in enumerate(datagen):
+                #for step, (x, y) in list_of_data:
                     if len(y) > 1:
                         self.optm.zero_grad()
                         # Feed Forward
@@ -194,6 +219,7 @@ class Engine:
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
+                        #print(auxloss, clfloss)
                         obj = clfloss + auxloss
                         # Train the model
                         obj.backward()
@@ -203,7 +229,7 @@ class Engine:
 
                         #  if step == 3:
                         #      break
-
+                idx = 2
                 if epoch == 0:
                     print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
                             format(epoch, idx, step, time() - t))
@@ -211,6 +237,7 @@ class Engine:
                 # Store the Loss
                 loss_vals.update_T('train', [clfLoss_T, auxLoss_T], \
                         epoch, idx, step + 1)
+                
             loss_vals.update('train', epoch)
 
             # Unittest
@@ -220,7 +247,8 @@ class Engine:
             print('Validation')
             if(epoch % validation_period == 0 or epoch == num_epochs - 1):
                 self.model.eval()
-                for idx, datagen in enumerate(datagen_val):
+                
+                for idx, datagen in enumerate(datagen_val):   
                     t = time()
                     clfLoss_T = 0.0 ; auxLoss_T = 0.0
                     for step, (x, y) in enumerate(datagen):
@@ -229,7 +257,7 @@ class Engine:
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
-                        print('Loss value: {}, Patient ID: {}, Trajectory ID: {}'.format(clfloss.item(), x['pid'], x['trajectory_id']))
+                        #print('Loss value: {}, Patient ID: {}, Trajectory ID: {}'.format(clfloss.item(), x['pid'], x['trajectory_id']))
                         obj = clfloss + auxloss
                         # Store the validation loss
                         clfLoss_T += float(clfloss)
@@ -245,6 +273,8 @@ class Engine:
                     # Store the Loss
                     loss_vals.update_T('val', [clfLoss_T, auxLoss_T], \
                         int(epoch/validation_period), idx, step + 1)
+                    
+               
                 loss_vals.update('val', int(epoch/validation_period))
 
             # LOGGING --------------------------------------
