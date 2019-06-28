@@ -82,4 +82,3 @@ class ANN_DX_1(nn.Module):
         x = self.fc7(x)
 
         return x
-

@@ -65,3 +65,4 @@ class Tadpole_No_BN(nn.Module):
         print('Min after third affine: ', np.max(x.cpu().detach().numpy()))
         x = self.dp4((F.relu(self.aff4(x))))
         return x
+

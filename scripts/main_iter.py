@@ -49,7 +49,7 @@ def main(config_file):
     class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
     print(class_wt)
 
-    num_iter = config['train'].pop('num_iter')
+    num_iter = config['num_iter']
 
     model_list = [None]*num_iter
     val_cnfmats = [None]*num_iter
@@ -85,10 +85,12 @@ def main(config_file):
             train_cnfmats[iteration] = model_list[iteration].test(datagen_train, exp_dir, 'train')
             print('Val data : ')
             val_cnfmats[iteration] = model_list[iteration].test(datagen_val, exp_dir, 'val')
-            #  stats = model.test_stats(datagen_val)
+            print('Generating and saving the stats ...')
+            stats = model.test_stats(datagen_val)
+            stats_dir = os.path.join(main_exp_dir, config['exp_id'] + '_' + str(iteration), 'stats.pickle')
 
-        #  with open('stats.pickle', 'wb') as f:
-            #  pickle.dump(stats, f)
+            with open(stats_dir, 'wb') as f:
+                pickle.dump(stats, f)
 
     if(num_iter > 1):
         print('Calculating aggregate results...')
@@ -110,17 +112,17 @@ if __name__=='__main__':
     # with open('../data/datagen_val.pickle','wb') as f:
     #    pickle.dump(dgv,f)
     
-    for i, datagen in enumerate(dgv):
-        num_traj = 0
-        minval = np.inf; maxval = np.NINF
-        for k, (x, y) in enumerate(datagen):
-            num_traj += x['img_features'].size()[0]
-            traj_id = x['trajectory_id'].data.numpy()
-            img_features = x['img_features'].data.numpy()
-            minval = min(minval, np.min(img_features))
-            maxval = max(maxval, np.max(img_features))
-        print('T = {}, traj = {}, min = {}, max = {}'.\
-              format(i, num_traj, minval, maxval))
+#    for i, datagen in enumerate(dgv):
+#        num_traj = 0
+#        minval = np.inf; maxval = np.NINF
+#        for k, (x, y) in enumerate(datagen):
+#            num_traj += x['img_features'].size()[0]
+#            traj_id = x['trajectory_id'].data.numpy()
+#            img_features = x['img_features'].data.numpy()
+#            minval = min(minval, np.min(img_features))
+#            maxval = max(maxval, np.max(img_features))
+#        print('T = {}, traj = {}, min = {}, max = {}'.\
+#              format(i, num_traj, minval, maxval))
 
             #  print(x.keys())
             #  print('y : ', y)

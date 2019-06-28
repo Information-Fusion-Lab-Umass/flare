@@ -5,6 +5,7 @@ import ipdb
 
 def preprocess_adni(input_path, output_path, pid_train):
     data = pd.read_csv(input_path, dtype = object)
+    train_ids = np.loadtxt(pid_train, dtype = str)
     
     # Add VISNUM column
     visit_id = {
@@ -15,10 +16,10 @@ def preprocess_adni(input_path, output_path, pid_train):
             'm24': 4,
             'm36': 5
             }
-    visit_codes = ['bl', 'm06', 'm12', 'm18', 'm24', 'm30', 'm36', \
-            'm42', 'm48', 'm54', 'm60', 'm66', 'm72', 'm78', 'm84', 'm90', \
-            'm96', 'm102', 'm108', 'm114', 'm120']
-    visit_id = {key: i for i, key in enumerate(visit_codes)}
+#    visit_codes = ['bl', 'm06', 'm12', 'm18', 'm24', 'm30', 'm36', \
+#            'm42', 'm48', 'm54', 'm60', 'm66', 'm72', 'm78', 'm84', 'm90', \
+#            'm96', 'm102', 'm108', 'm114', 'm120']
+#    visit_id = {key: i for i, key in enumerate(visit_codes)}
     data['VISNUM'] = data['VISCODE'].apply(lambda x: visit_id[x] \
             if x in visit_id else -1)
 
@@ -44,13 +45,18 @@ def preprocess_adni(input_path, output_path, pid_train):
     for col in cols:
         data[col] = data[col].apply(pd.to_numeric, errors = 'coerce')
         data[col].fillna(data[col].mean(), inplace=True)
+
+        featcol = data[data['PTID'].isin(train_ids)][col].values
+        mean, std = np.mean(featcol), np.std(featcol)
+        data[col] = (data[col] - mean)/(std + 1e-4)
+        print(len(featcol), mean, std)
         
     # Fill Nan values of APOE4 gene with 0
     data['APOE4'] = data['APOE4'].apply(pd.to_numeric, errors = 'coerce')
     data['APOE4'].fillna(0, inplace=True)
 
     # Normalize the image feature columns
-    train_ids = np.loadtxt(pid_train, dtype = str)
+
     for name in tqdm(data.columns.values):
         if('UCSFFSX' in name or 'UCSFFSL' in name):
             if(name.startswith('ST') and 'STATUS' not in name):
@@ -64,7 +70,7 @@ def preprocess_adni(input_path, output_path, pid_train):
 
 if __name__ == '__main__':
     input_path = '../data/TADPOLE_D1_D2.csv'
-    output_path = '../data/TADPOLE_D1_D2_proc_norm_all_1.csv'
+    output_path = '../data/TADPOLE_D1_D2_proc_norm_test.csv'
     pid_train = '../data/patientID_train_all.txt'
     preprocess_adni(input_path, output_path, pid_train)
 

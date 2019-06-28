@@ -2,6 +2,7 @@ import os
 import nibabel as nib
 import numpy as np
 import torch
+import torch.nn as nn
 import pickle
 from src import evaluate
 
@@ -134,4 +135,23 @@ def stdev_confmat(accuracies):
         for j in range(T):
             stdev[i,j] = np.std(accuracies[:,i,j],axis=0)
     return stdev
-            
+
+def init_kaiming_normal(m):
+    if type(m) == nn.Linear:
+        nn.init.kaiming_normal_(m.weight)            
+        m.bias.data.fill_(0)
+         
+def init_kaiming_uniform(m):
+    if type(m) == nn.Linear:
+        nn.init.kaiming_uniform_(m.weight)            
+        m.bias.data.fill_(0)
+
+def init_rnn(m):
+    if type(m) in [nn.GRU, nn.LSTM, nn.RNN]:
+        for name, param in m.named_parameters():
+            if 'weight_ih' in name:
+                torch.nn.init.xavier_uniform_(param.data)
+            elif 'weight_hh' in name:
+                torch.nn.init.orthogonal_(param.data)
+            elif 'bias' in name:
+                param.data.fill_(0)

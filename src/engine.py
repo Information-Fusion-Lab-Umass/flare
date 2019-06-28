@@ -57,7 +57,7 @@ class Model(nn.Module):
         self.model_task = self.model_task.to(device)
 
         self.class_wt = torch.tensor(class_wt).float().to(device)
-
+        
     def loss(self, y_pred, y):
         y = y.long().to(self.device)
         return nn.CrossEntropyLoss(weight = self.class_wt)(y_pred, y)
@@ -136,10 +136,14 @@ class Engine:
     def __init__(self, class_wt, model_config):
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
+        self.lr = model_config.pop('learning_rate')
 
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.use_cuda else "cpu")
         self.model = Model(self.device, class_wt, **model_config).to(self.device)
+        # initialize weights
+        self.model.apply(utils.init_kaiming_uniform)
+        self.model.apply(utils.init_rnn)
 
         # Load the model
         if load_model != '':
@@ -159,7 +163,8 @@ class Engine:
             self.model_params['cov'] = list(self.model.model_cov.parameters())
 
         # Initialize the optimizer
-        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []))
+        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), \
+             lr = self.lr)
 
     def train(self, datagen_train, datagen_val, \
             exp_dir, num_epochs, log_period=100, \
@@ -229,7 +234,7 @@ class Engine:
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
-                        print('Loss value: {}, Patient ID: {}, Trajectory ID: {}'.format(clfloss.item(), x['pid'], x['trajectory_id']))
+                        # print('Loss value: {}, Patient ID: {}, Trajectory ID: {}'.format(clfloss.item(), x['pid'], x['trajectory_id']))
                         obj = clfloss + auxloss
                         # Store the validation loss
                         clfLoss_T += float(clfloss)
