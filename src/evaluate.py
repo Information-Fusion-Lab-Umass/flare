@@ -36,14 +36,13 @@ class ConfMatrix:
         probs = counts/(np.sum(counts, axis=1)[:,np.newaxis]+0.001)
         f1 = f1_score(y, y_pred, labels = list(range(self.num_classes)), 
                 average = 'micro')
-        precision, recall, _, _ = precision_recall_fscore_support(y, y_pred, labels = list(range(self.num_classes)), average = 'micro')
-
+        precision, recall, _, _ = precision_recall_fscore_support(y, y_pred, labels = list(range(self.num_classes)), average = 'macro')
         self.counts[T, tau] = counts
         self.probs[T, tau] = probs
         self.f1[T, tau] = f1
         self.precision[T,tau] = precision
         self.recall[T,tau] = recall
-
+        
     def save(self, exp_dir, filename):
         T, C, Tau = self.numT, self.num_classes, self.numT
         probs = np.zeros((T*C, Tau*C))
@@ -54,7 +53,7 @@ class ConfMatrix:
                 if isinstance(self.probs[t, tau], np.ndarray):
                     probs[t*C:(t+1)*C, tau*C:(tau+1)*C] = self.probs[t, tau]
                     counts[t*C:(t+1)*C, tau*C:(tau+1)*C] = self.counts[t, tau]
-        
+                    #print(t, tau, self.f1[t, tau], self.precision[t,tau], self.recall[t,tau])
         savemat(
             os.path.join(exp_dir, 'results', 'confmatrix_' + filename + '.mat'), 
             {'probs' : probs, 'counts' : counts}
@@ -172,7 +171,7 @@ class LossVals:
         colors = [cm(1.*i/num_graphs) for i in range(num_graphs)]
         for T in range(self.num_T):
             plt.plot(xaxis, self.train_loss_T['totalLoss'][:, T], \
-                    c = colors[T], label = 'T = '+str(T+2))
+                    c = colors[T], label = 'T = '+str(T+1))
         plt.legend()
         plt.title('Train Loss : Total Loss of datagens')
         plt.savefig(os.path.join(path, 'train_loss_2.png'), dpi = 300)
@@ -193,7 +192,7 @@ class LossVals:
         plt.figure()
         for T in range(self.num_T):
             plt.plot(xaxis, self.val_loss_T['totalLoss'][:, T], \
-                    c = colors[T], label = 'T = '+str(T+2))
+                    c = colors[T], label = 'T = '+str(T+1))
         plt.legend()
         plt.title('Test Loss : Total Loss of datagens')
         plt.savefig(os.path.join(path, 'test_loss_2.png'), dpi = 300)
