@@ -149,6 +149,7 @@ class Engine:
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
         self.lr = model_config.pop('learning_rate')
+
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.use_cuda else "cpu")
         self.model = Model(self.device, class_wt, **model_config).to(self.device)
@@ -174,8 +175,7 @@ class Engine:
             self.model_params['cov'] = list(self.model.model_cov.parameters())
 
         # Initialize the optimizer
-        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), \
-             lr = self.lr)
+        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), lr = self.lr)
 
     def train(self, datagen_train, datagen_val, \
             exp_dir, num_epochs, log_period=100, \
