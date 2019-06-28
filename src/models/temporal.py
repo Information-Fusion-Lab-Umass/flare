@@ -39,15 +39,6 @@ class forecastRNN(nn.Module):
         nelt = ypred.nelement()
         ypred, y = ypred.to(self.device), y.to(self.device)
 
-       # auxloss = nn.MSELoss(reduction = 'mean')(ypred, y)*1./nelt 
-       #
-       # if(auxloss > 1000):
-       #     print('HOLA')
-       #     print('Aux Loss: {}'.format(auxloss))
-
-       # else:
-       #     print('Aux Loss: {}'.format(auxloss))
-
         return nn.MSELoss(reduction = 'mean')(ypred, y)*1./nelt
 
     def forward(self, x, t): 
