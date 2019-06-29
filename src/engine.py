@@ -140,7 +140,6 @@ class Model(nn.Module):
                 for i in range(T-1):
                     ypred_aux = self.model_task(x_cache[:,i,:])
                     lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
-            lossval /= (T-1)
       
         return ypred, self.aux_loss_scale * lossval
 
@@ -155,6 +154,7 @@ class Engine:
         init = model_config.pop('init')
         rnn_init = init['rnn_init']
         linear_init = init['linear_init']
+        self.aux_loss_scale = model_config['aux_loss_scale']
         self.model = Model(self.device, class_wt, **model_config).to(self.device)
 
         # initialize weights
@@ -223,9 +223,14 @@ class Engine:
                     x = {k : v.to(self.device) for k, v in x.items()}
                     y = y.to(self.device)
                     y_pred, auxloss = self.model(x)
+
                     clfloss = self.model.loss(y_pred, y)
                     #print(auxloss, clfloss)
-                    obj = clfloss + auxloss
+
+                    if idx == 0:
+                        obj = clfloss*(1+self.aux_loss_scale)
+                    else: 
+                        obj = clfloss + auxloss
                     # Train the model
                     obj.backward()
                     self.optm.step()
