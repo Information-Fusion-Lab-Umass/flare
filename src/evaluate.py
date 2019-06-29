@@ -35,7 +35,7 @@ class ConfMatrix:
         counts = confusion_matrix(y, y_pred, labels = list(range(self.num_classes)))
         probs = counts/(np.sum(counts, axis=1)[:,np.newaxis]+0.001)
         f1 = f1_score(y, y_pred, labels = list(range(self.num_classes)), 
-                average = 'micro')
+                average = 'macro')
         precision, recall, _, _ = precision_recall_fscore_support(y, y_pred, labels = list(range(self.num_classes)), average = 'macro')
         self.counts[T, tau] = counts
         self.probs[T, tau] = probs

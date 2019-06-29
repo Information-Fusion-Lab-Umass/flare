@@ -152,10 +152,16 @@ class Engine:
 
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.use_cuda else "cpu")
+        init = model_config.pop('init')
+        rnn_init = init['rnn_init']
+        linear_init = init['linear_init']
         self.model = Model(self.device, class_wt, **model_config).to(self.device)
+
         # initialize weights
-        self.model.apply(utils.init_kaiming_uniform)
-        self.model.apply(utils.init_rnn)
+        if rnn_init:
+            self.model.apply(utils.init_rnn)
+        if linear_init:
+            self.model.apply(utils.init_kaiming_uniform)
 
         # Load the model
         if load_model != '':
@@ -211,24 +217,23 @@ class Engine:
                 clfLoss_T = 0.0 ; auxLoss_T = 0.0
                 for step, (x, y) in enumerate(datagen):
                 #for step, (x, y) in list_of_data:
-                    if len(y) > 1:
-                        self.optm.zero_grad()
-                        # Feed Forward
-                        x = {k : v.to(self.device) for k, v in x.items()}
-                        y = y.to(self.device)
-                        y_pred, auxloss = self.model(x)
-                        clfloss = self.model.loss(y_pred, y)
-                        #print(auxloss, clfloss)
-                        obj = clfloss + auxloss
-                        # Train the model
-                        obj.backward()
-                        self.optm.step()
-                        clfLoss_T += float(clfloss)
-                        auxLoss_T += float(auxloss)
+#                    if len(y) > 1:
+                    self.optm.zero_grad()
+                    # Feed Forward
+                    x = {k : v.to(self.device) for k, v in x.items()}
+                    y = y.to(self.device)
+                    y_pred, auxloss = self.model(x)
+                    clfloss = self.model.loss(y_pred, y)
+                    #print(auxloss, clfloss)
+                    obj = clfloss + auxloss
+                    # Train the model
+                    obj.backward()
+                    self.optm.step()
+                    clfLoss_T += float(clfloss)
+                    auxLoss_T += float(auxloss)
 
-                        #  if step == 3:
-                        #      break
-                idx = 2
+                    #  if step == 3:
+                    #      break
                 if epoch == 0:
                     print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
                             format(epoch, idx, step, time() - t))
@@ -282,11 +287,12 @@ class Engine:
                         format(epoch + 1, loss_vals.train_loss['totalLoss'][epoch]))
 
             # SAVING THE MODEL -----------------------------
-            if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
-                print('Checkpoint : Saving model at Epoch : {}'.\
-                        format(epoch+1))
-                torch.save(self.model.state_dict(), exp_dir + \
-                        '/checkpoints/model_ep' + str(epoch+1) + '.pth')
+            if(save_model):
+                if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
+                    print('Checkpoint : Saving model at Epoch : {}'.\
+                            format(epoch+1))
+                    torch.save(self.model.state_dict(), exp_dir + \
+                            '/checkpoints/model_ep' + str(epoch+1) + '.pth')
 
             sys.stdout.flush()
 
@@ -308,12 +314,8 @@ class Engine:
                 x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
                 y_batch = y_batch.to(self.device)
                 y_pred_batch, auxloss = self.model(x_batch)
-                #if(auxloss > 100):
-                #    x_max = x_batch
                 clfloss = self.model.loss(y_pred_batch,y_batch)
                 y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
-                #  print(idx)
-                #  print(y_pred_batch)
 
                 if step == 0:
                     y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
