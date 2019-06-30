@@ -226,10 +226,12 @@ class Engine:
 
                     clfloss = self.model.loss(y_pred, y)
                     #print(auxloss, clfloss)
-
-                    if idx == 0:
-                        obj = clfloss*(1+self.aux_loss_scale)
-                    else: 
+                    if self.model.model_temporal_name == 'forecastRNN':
+                        if idx == 0:
+                            obj = clfloss*(1+self.aux_loss_scale)
+                        else: 
+                            obj = clfloss + auxloss
+                    else:
                         obj = clfloss + auxloss
                     # Train the model
                     obj.backward()

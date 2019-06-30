@@ -67,8 +67,10 @@ def main(config_file):
                 os.path.join(exp_dir, 'logs')])
 
         # Copy config file
-        copyfile(config_file, os.path.join(exp_dir, config['exp_id']+'_' + str(iteration) + '.yaml'))
-    
+#        copyfile(config_file, os.path.join(exp_dir, config['exp_id']+'_' + str(iteration) + '.yaml'))
+        with open(os.path.join(exp_dir, config['exp_id']+'_' + str(iteration) + '.yaml'),'w') as f:
+            yaml.dump(config, f, default_flow_style=False)
+
         # Define Classification model
         model = engine.Engine(class_wt, model_config)
         model_list[iteration] = model
