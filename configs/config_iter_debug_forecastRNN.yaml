@@ -19,6 +19,7 @@ datagen:
     batch_size: &bsize 128
     max_visits: &T 5
     max_T : 5
+    dataload_method: uniform
 
 # Model 
 model:

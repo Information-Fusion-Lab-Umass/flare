@@ -184,8 +184,9 @@ class Engine:
         self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), lr = self.lr)
 
     def train(self, datagen_train, datagen_val, \
-            exp_dir, num_epochs, log_period=100, \
-            ckpt_period=100, validation_period = 100, save_model=False):
+            exp_dir, dataload_method, data_train_size, batch_size, num_epochs, \
+            log_period=100, ckpt_period=100, \
+            validation_period = 100, save_model=False):
         
         loss_vals = evaluate.LossVals(
                 num_epochs,
@@ -205,19 +206,11 @@ class Engine:
 
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
             lossval = 0.0; count = 0
-            #list_of_data = list(enumerate(datagen_train[0]))
-            #list_of_data += list(enumerate(datagen_train[1]))
-            #list_of_data += list(enumerate(datagen_train[2]))
-            #list_of_data += list(enumerate(datagen_train[3]))
-            #list_of_data += list(enumerate(datagen_train[4]))
-            #random.shuffle(list_of_data)
-            #if True:
-            for idx, datagen in enumerate(datagen_train):
+
+            def train_with_datagen_helper(datagen_enum, special_cmd=""):
                 t = time()
                 clfLoss_T = 0.0 ; auxLoss_T = 0.0
-                for step, (x, y) in enumerate(datagen):
-                #for step, (x, y) in list_of_data:
-#                    if len(y) > 1:
+                for step, (x, y) in datagen_enum:
                     self.optm.zero_grad()
                     # Feed Forward
                     x = {k : v.to(self.device) for k, v in x.items()}
@@ -229,7 +222,7 @@ class Engine:
                     if self.model.model_temporal_name == 'forecastRNN':
                         if idx == 0:
                             obj = clfloss*(1+self.aux_loss_scale)
-                        else: 
+                        else:
                             obj = clfloss + auxloss
                     else:
                         obj = clfloss + auxloss
@@ -238,17 +231,47 @@ class Engine:
                     self.optm.step()
                     clfLoss_T += float(clfloss)
                     auxLoss_T += float(auxloss)
+                    if special_cmd == "break":
+                        break
+                return clfLoss_T, auxLoss_T, t, step
 
-                    #  if step == 3:
-                    #      break
-                if epoch == 0:
-                    print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
-                            format(epoch, idx, step, time() - t))
-
-                # Store the Loss
-                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], \
-                        epoch, idx, step + 1)
-                
+            if dataload_method == "fully_randomized":
+                list_of_data = list()
+                for idx in range(len(datagen_train)):
+                    list_of_data += list(enumerate(datagen_train[idx]))
+                random.shuffle(list_of_data)
+                clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(list_of_data)
+                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, 2, step + 1)
+            elif dataload_method == "partially_randomized" or dataload_method == "reversed":
+                datagen_idx_list = list(range(len(datagen_train)))
+                if dataload_method == "partially_randomized":
+                    random.shuffle(datagen_idx_list)
+                elif dataload_method == "reversed":
+                    datagen_idx_list.reverse()
+                for idx in datagen_idx_list:
+                    datagen = datagen_train[idx]
+                    clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(enumerate(datagen))
+                    if epoch == 0:
+                        print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
+                               format(epoch, idx, step, time() - t))
+                    loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
+            elif dataload_method == "uniform":
+                num_iter_per_epoche = float(data_train_size) / batch_size
+                clfLoss_T, auxLoss_T = 0.0, 0.0
+                for i in range(int(num_iter_per_epoche)):
+                    idx = random.randrange(len(datagen_train))
+                    datagen = datagen_train[idx]
+                    clfLoss, auxLoss, t, step = train_with_datagen_helper(enumerate(datagen), "break")
+                    clfLoss_T += clfLoss; auxLoss_T += auxLoss
+                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, 2, num_iter_per_epoche)    
+            else:
+                for idx, datagen in enumerate(datagen_train):
+                    clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(enumerate(datagen))
+                    if epoch == 0:
+                        print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
+                               format(epoch, idx, step, time() - t))
+                    loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
+                    
             loss_vals.update('train', epoch)
 
             # Unittest

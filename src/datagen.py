@@ -27,7 +27,7 @@ def get_data(path, train_ids_path, test_ids_path,
     data['test_ids'] = test_ids
     return data
 
-def get_datagen(src_data, batch_size, max_visits, max_T):
+def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     data_train = {key : src_data[key] \
             for key in src_data['train_ids'] if key in src_data}
     data_val = {key : src_data[key] \
@@ -35,10 +35,12 @@ def get_datagen(src_data, batch_size, max_visits, max_T):
 
     # Get train data generators
     datagen_train = []
+    data_train_size = 0
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_train, T, max_T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_train.append(dataloader)
+        data_train_size += len(dataset)
 
     # Get validation data generators
     datagen_val = []
@@ -46,7 +48,7 @@ def get_datagen(src_data, batch_size, max_visits, max_T):
         dataset = Dataset(data_val, T, max_T)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
         datagen_val.append(dataloader)
-    return datagen_train, datagen_val
+    return datagen_train, datagen_val, data_train_size
 
 class Dataset(data.Dataset):
     def __init__(self, data, T, max_T):

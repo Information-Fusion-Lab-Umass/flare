@@ -43,7 +43,7 @@ def main(config_file):
 
     # Datagens
     t = time()
-    datagen_train, datagen_val = \
+    datagen_train, datagen_val, data_train_size = \
             datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
     class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
@@ -78,7 +78,9 @@ def main(config_file):
         # Train the model
         if config['train_model']:
             print('Training the model ...')
-            model_list[iteration].train(datagen_train, datagen_val, exp_dir, **config['train'])
+            batch_size, dataload_method = config['datagen']['batch_size'], config['datagen']['dataload_method']
+            model_list[iteration].train(datagen_train, datagen_val, exp_dir, dataload_method, \
+                                        data_train_size, batch_size, **config['train'])
 
         # Test the model
         if config['test_model']:
