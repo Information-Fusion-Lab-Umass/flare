@@ -15,7 +15,6 @@ scripts/run.sh
 scripts/run_output
 scripts/errors
 scripts/misc
-configs/
 
 /* outputs/debug */
 *.pth
@@ -23,5 +22,3 @@ outputs/
 
 src/.engine.py.swp
 
-*.yaml
-*.sh
