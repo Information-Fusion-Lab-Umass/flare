@@ -48,3 +48,11 @@ model:
     fusion: concat_feature
     aux_loss: MSE
     aux_loss_scale: 8000
+
+# Train 
+train:
+    num_epochs: 75
+    log_period: 1
+    ckpt_period: 22
+    validation_period: 1
+    save_model: True
