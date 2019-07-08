@@ -146,6 +146,7 @@ class Model(nn.Module):
 class Engine:
     def __init__(self, class_wt, model_config):
         load_model = model_config.pop('load_model')
+        self.early_stopping = model_config.pop('early_stopping')
         self.num_classes = model_config['module_task']['num_classes']
         self.lr = model_config.pop('learning_rate')
         self.weight_decay = model_config.pop('weight_decay')
@@ -195,6 +196,9 @@ class Engine:
                 len(datagen_train)
                 )
 
+        # Set min for early stopping condition
+        min_loss = np.inf
+
         for epoch in range(num_epochs):
             # TRAIN THE MODEL ---------------------------
             self.model.train()
@@ -204,7 +208,7 @@ class Engine:
             for key in self.model_params:
                 p = self.model_params[key]
                 params[key] = [p[i].clone() for i in range(len(p))]
-
+            
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
             lossval = 0.0; count = 0
 
@@ -292,14 +296,12 @@ class Engine:
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
-                        # print('Loss value: {}, Patient ID: {}, Trajectory ID: {}'.format(clfloss.item(), x['pid'], x['trajectory_id']))
                         obj = clfloss + auxloss
+
                         # Store the validation loss
                         clfLoss_T += float(clfloss)
                         auxLoss_T += float(auxloss)
                         sys.stdout.flush()
-                        #  if step == 3:
-                        #      break
 
                     if epoch == 0:
                         print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
@@ -307,23 +309,24 @@ class Engine:
 
                     # Store the Loss
                     loss_vals.update_T('val', [clfLoss_T, auxLoss_T], \
-                        int(epoch/validation_period), idx, step + 1)
-                    
-               
+                        int(epoch/validation_period), idx, step + 1)  
+
                 loss_vals.update('val', int(epoch/validation_period))
+
+                if loss_vals.val_loss['totalLoss'][epoch] < min_loss:
+                    # SAVING THE MODEL -----------------------------
+                    min_loss = loss_vals.val_loss['totalLoss'][epoch]
+                    if(save_model):
+                        if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
+                            print('Checkpoint : Saving model at Epoch : {}'.\
+                                    format(epoch+1))
+                            torch.save(self.model.state_dict(), exp_dir + \
+                                    '/checkpoints/model_ep_min' + '.pth')
 
             # LOGGING --------------------------------------
             if epoch % log_period == 0:
                 print('Epoch : {}, Train Loss = {}'. \
                         format(epoch + 1, loss_vals.train_loss['totalLoss'][epoch]))
-
-            # SAVING THE MODEL -----------------------------
-            if(save_model):
-                if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
-                    print('Checkpoint : Saving model at Epoch : {}'.\
-                            format(epoch+1))
-                    torch.save(self.model.state_dict(), exp_dir + \
-                            '/checkpoints/model_ep' + str(epoch+1) + '.pth')
 
             sys.stdout.flush()
 
@@ -335,6 +338,9 @@ class Engine:
                 num_graphs = len(datagen_train))
 
     def test(self, datagen_test, exp_dir, filename):
+        if self.early_stopping: 
+            load_model = exp_dir+'/checkpoints/model_ep_min.pth'
+            self.model.load_state_dict(torch.load(load_model, map_location = self.device))
         self.model.eval()
         numT = len(datagen_test)
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
@@ -432,4 +438,5 @@ class Engine:
             dataT['trajectory_id'] = trajectory_id
             data.append(dataT)
         return data
+
 

@@ -89,12 +89,7 @@ def main(config_file):
             train_cnfmats[iteration] = model_list[iteration].test(datagen_train, exp_dir, 'train')
             print('Val data : ')
             val_cnfmats[iteration] = model_list[iteration].test(datagen_val, exp_dir, 'val')
-            print('Generating and saving the stats ...')
-            stats = model.test_stats(datagen_val)
-            stats_dir = os.path.join(main_exp_dir, config['exp_id'] + '_' + str(iteration), 'stats.pickle')
 
-            with open(stats_dir, 'wb') as f:
-                pickle.dump(stats, f)
 
     if(num_iter > 1):
         print('Calculating aggregate results...')

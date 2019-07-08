@@ -8,6 +8,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --time=4-00:00:00          # HH:MM:SS
 
-python3 main_iter.py --config=../configs/config_iter_debug_rnn.yaml
+python3 main_iter.py --config=../configs/concat.yaml
 sleep 1
 exit

@@ -8,6 +8,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --time=4-00:00:00          # HH:MM:SS
 
-python3 main_iter.py --config=../configs/config_iter_debug_forecastRNN.yaml
+python3 main_iter.py --config=../configs/flare_MSE.yaml
 sleep 1
 exit
