@@ -148,6 +148,7 @@ class Engine:
         load_model = model_config.pop('load_model')
         self.num_classes = model_config['module_task']['num_classes']
         self.lr = model_config.pop('learning_rate')
+        self.weight_decay = model_config.pop('weight_decay')
 
         self.use_cuda = torch.cuda.is_available()
         self.device = torch.device("cuda:0" if self.use_cuda else "cpu")
@@ -181,7 +182,7 @@ class Engine:
             self.model_params['cov'] = list(self.model.model_cov.parameters())
 
         # Initialize the optimizer
-        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), lr = self.lr)
+        self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), lr = self.lr, weight_decay=self.weight_decay)
 
     def train(self, datagen_train, datagen_val, \
             exp_dir, dataload_method, data_train_size, batch_size, num_epochs, \
@@ -263,7 +264,7 @@ class Engine:
                     datagen = datagen_train[idx]
                     clfLoss, auxLoss, t, step = train_with_datagen_helper(enumerate(datagen), "break")
                     clfLoss_T += clfLoss; auxLoss_T += auxLoss
-                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, 2, num_iter_per_epoche)    
+                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, num_iter_per_epoche)    
             else:
                 for idx, datagen in enumerate(datagen_train):
                     clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(enumerate(datagen))

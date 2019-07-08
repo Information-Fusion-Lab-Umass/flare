@@ -77,7 +77,7 @@ class Trajectory:
     Input:
         init_vis (list): A list of tuples. Each tuple is a visit entry.
     '''
-    def __init__(self, visits, trajectory_id, patient_info):
+    def __init__(self, visits, visit_at_tau_1, trajectory_id, patient_info):
         self.visits = {}
         for visit in visits:
             self.visits[visit.visit_id] = visit
@@ -94,7 +94,6 @@ class Trajectory:
         self.first_occurance_ad = patient_info['first_occurance_ad']
         self.trajectory_id = trajectory_id
 
-        
 class Visit:
     '''
     Each visit has query functions that allow you to access data from a
