@@ -1,13 +1,13 @@
 # Experiment
-exp_id: debug_MSE
+exp_id: debug_MSE_2
 output_dir: &output ../outputs/7.10.2019-2/flare
 train_model: True
 test_model: True
-num_iter: 2
+num_iter: 1
 
 # Data
 data:
-    path_load: ../data/data_norm_subsetT4.pickle
+    path_load: ../data/data_norm_test.pickle
     path: ../data/TADPOLE_D1_D2_proc_norm_test.csv
     train_ids_path: ../data/patientID_train.txt
     test_ids_path: ../data/patientID_test.txt
@@ -19,15 +19,15 @@ datagen:
     batch_size: &bsize 32
     max_visits: &T 5
     max_T : 5
-    dataload_method: uniform
+    dataload_method: None
 
 # Model 
 model:
     load_model: '' #'/mnt/nfs/work1/mfiterau/yeahuaywu/flare/outputs/forecast_iter_debug_loss_spike_exp2/forecast_iter_debug_loss_spike_exp2_4/checkpoints/model_ep28.pth' #../outputs/forecast_6_6/checkpoints/model_ep20.pth'
     # class_wt: [1.36, 1, 1.78] # [1, 1.3, 2]
     early_stopping: True
-    learning_rate: .0019
-    weight_decay: .001
+    learning_rate: .0021
+    weight_decay: .0016
     init:
         rnn_init: True
         linear_init: True
@@ -47,12 +47,12 @@ model:
         num_classes: 3 
     fusion: concat_feature
     aux_loss: MSE
-    aux_loss_scale: 8000
+    aux_loss_scale: 10000
 
 # Train 
 train:
-    num_epochs: 75
+    num_epochs: 30
     log_period: 1
-    ckpt_period: 22
+    ckpt_period: 1
     validation_period: 1
     save_model: True
