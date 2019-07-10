@@ -315,7 +315,6 @@ class Engine:
         numT = len(datagen_test)
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
             
-        ctr = 0
         for idx, datagen in enumerate(datagen_test):
             for step, (x_batch, y_batch) in enumerate(datagen):
                 x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
