@@ -197,7 +197,7 @@ class Engine:
                 )
 
         # Set min for early stopping condition
-        #min_loss = np.inf
+        min_loss = np.inf
 
         for epoch in range(num_epochs):
             # TRAIN THE MODEL ---------------------------
@@ -339,9 +339,9 @@ class Engine:
                 num_graphs = len(datagen_train))
 
     def test(self, datagen_test, exp_dir, filename):
-        #if self.early_stopping: 
-        #    load_model = exp_dir+'/checkpoints/model_ep_min.pth'
-        #    self.model.load_state_dict(torch.load(load_model, map_location = self.device))
+        if self.early_stopping: 
+            load_model = exp_dir+'/checkpoints/model_ep_min.pth'
+            self.model.load_state_dict(torch.load(load_model, map_location = self.device))
         self.model.eval()
         numT = len(datagen_test)
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
