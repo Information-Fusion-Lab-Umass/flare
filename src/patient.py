@@ -56,7 +56,7 @@ class Patient:
                 }
 
         # Obtain trajectory data 
-        for i in range(2, self.num_visits + 1):
+        for i in range(self.num_visits, self.num_visits + 1):
             self.trajectories_id[i] = list(comb(self.visits_id, i))
             if only_consecutive: 
                 self.trajectories_id[i] = utils.return_consec(\
