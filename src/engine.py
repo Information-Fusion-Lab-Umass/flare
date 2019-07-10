@@ -211,72 +211,41 @@ class Engine:
             
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
             lossval = 0.0; count = 0
-
-            def train_with_datagen_helper(datagen_enum, special_cmd=""):
+            
+            #Check if running T subset exp 
+            T_subset = (len(datagen_train) == 1)
+            
+            for idx, datagen in enumerate(datagen_train):
                 t = time()
-                clfLoss_T = 0.0 ; auxLoss_T = 0.0
-                for step, (x, y) in datagen_enum:
+                clfLoss_T = 0.0; auxLoss_T = 0.0
+                for step, (x,y) in enumerate(datagen):
                     self.optm.zero_grad()
-                    # Feed Forward
+
                     x = {k : v.to(self.device) for k, v in x.items()}
                     y = y.to(self.device)
                     y_pred, auxloss = self.model(x)
-
                     clfloss = self.model.loss(y_pred, y)
-                    #print(auxloss, clfloss)
-                    if self.model.model_temporal_name == 'forecastRNN':
+                    if self.model.model_temporal_name == 'forecastRNN' and not T_subset:
                         if idx == 0:
-                            obj = clfloss*(1+self.aux_loss_scale)
+                            obj = clfloss + auxloss*(1+self.aux_loss_scale)
                         else:
                             obj = clfloss + auxloss
                     else:
                         obj = clfloss + auxloss
-                    # Train the model
+                    
+                    #Train the model                    
                     obj.backward()
                     self.optm.step()
+
                     clfLoss_T += float(clfloss)
                     auxLoss_T += float(auxloss)
-                    if special_cmd == "break":
-                        break
-                return clfLoss_T, auxLoss_T, t, step
-
-            if dataload_method == "fully_randomized":
-                list_of_data = list()
-                for idx in range(len(datagen_train)):
-                    list_of_data += list(enumerate(datagen_train[idx]))
-                random.shuffle(list_of_data)
-                clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(list_of_data)
-                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, 2, step + 1)
-            elif dataload_method == "partially_randomized" or dataload_method == "reversed":
-                datagen_idx_list = list(range(len(datagen_train)))
-                if dataload_method == "partially_randomized":
-                    random.shuffle(datagen_idx_list)
-                elif dataload_method == "reversed":
-                    datagen_idx_list.reverse()
-                for idx in datagen_idx_list:
-                    datagen = datagen_train[idx]
-                    clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(enumerate(datagen))
-                    if epoch == 0:
-                        print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
-                               format(epoch, idx, step, time() - t))
-                    loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
-            elif dataload_method == "uniform":
-                num_iter_per_epoche = float(data_train_size) / batch_size
-                clfLoss_T, auxLoss_T = 0.0, 0.0
-                for i in range(int(num_iter_per_epoche)):
-                    idx = random.randrange(len(datagen_train))
-                    datagen = datagen_train[idx]
-                    clfLoss, auxLoss, t, step = train_with_datagen_helper(enumerate(datagen), "break")
-                    clfLoss_T += clfLoss; auxLoss_T += auxLoss
-                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, num_iter_per_epoche)    
-            else:
-                for idx, datagen in enumerate(datagen_train):
-                    clfLoss_T, auxLoss_T, t, step = train_with_datagen_helper(enumerate(datagen))
-                    if epoch == 0:
-                        print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
-                               format(epoch, idx, step, time() - t))
+                    sys.stdout.flush()
                     
-                    loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
+                if epoch == 0:
+                    print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
+                           format(epoch, idx, step, time() - t))
+                
+                loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
                     
             loss_vals.update('train', epoch)
 
@@ -314,15 +283,15 @@ class Engine:
 
                 loss_vals.update('val', int(epoch/validation_period))
 
-                #if loss_vals.val_loss['totalLoss'][epoch] < min_loss:
-                #    # SAVING THE MODEL -----------------------------
-                #    min_loss = loss_vals.val_loss['totalLoss'][epoch]
-                #    if(save_model):
-                #        if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
-                #            print('Checkpoint : Saving model at Epoch : {}'.\
-                #                    format(epoch+1))
-                #            torch.save(self.model.state_dict(), exp_dir + \
-                #                    '/checkpoints/model_ep_min' + '.pth')
+                if loss_vals.val_loss['totalLoss'][epoch] < min_loss:
+                    # SAVING THE MODEL -----------------------------
+                    min_loss = loss_vals.val_loss['totalLoss'][epoch]
+                    if(save_model):
+                        if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
+                            print('Checkpoint : Saving model at Epoch : {}'.\
+                                    format(epoch+1))
+                            torch.save(self.model.state_dict(), exp_dir + \
+                                    '/checkpoints/model_ep_min' + '.pth')
 
             # LOGGING --------------------------------------
             if epoch % log_period == 0:
