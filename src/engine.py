@@ -121,6 +121,7 @@ class Model(nn.Module):
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN':
             x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
+
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
       
@@ -140,7 +141,6 @@ class Model(nn.Module):
                 for i in range(T-1):
                     ypred_aux = self.model_task(x_cache[:,i,:])
                     lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
-      
         return ypred, self.aux_loss_scale * lossval
 
 class Engine:
@@ -195,7 +195,6 @@ class Engine:
                 validation_period,
                 len(datagen_train)
                 )
-
         # Set min for early stopping condition
         min_loss = np.inf
 
@@ -225,6 +224,7 @@ class Engine:
                     y = y.to(self.device)
                     y_pred, auxloss = self.model(x)
                     clfloss = self.model.loss(y_pred, y)
+
                     if self.model.model_temporal_name == 'forecastRNN' and not T_subset:
                         if idx == 0:
                             obj = clfloss + auxloss*(1+self.aux_loss_scale)
@@ -233,12 +233,13 @@ class Engine:
                     else:
                         obj = clfloss + auxloss
                     
-                    #Train the model                    
+                    # Train the model
                     obj.backward()
                     self.optm.step()
 
                     clfLoss_T += float(clfloss)
                     auxLoss_T += float(auxloss)
+
                     sys.stdout.flush()
                     
                 if epoch == 0:
@@ -246,6 +247,7 @@ class Engine:
                            format(epoch, idx, step, time() - t))
                 
                 loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
+                print('auxLoss_T: ', auxLoss_T)
                     
             loss_vals.update('train', epoch)
 
