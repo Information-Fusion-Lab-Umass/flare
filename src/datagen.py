@@ -35,21 +35,26 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
 
     data_train_size = 0
 
+
     # Get train data generators
+    datasets_train = []
     datagen_train = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_train, T, max_T)
+        datasets_train.append(dataset)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
         datagen_train.append(dataloader)
         data_train_size += len(dataset)
 
     # Get validation data generators
+    datasets_val = []
     datagen_val = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_val, T, max_T)
+        datasets_val.append(dataset)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
         datagen_val.append(dataloader)
-    return datagen_train, datagen_val, data_train_size
+    return datagen_train, datagen_val, datasets_train, datasets_val, data_train_size
 
 class Dataset(data.Dataset):
     def __init__(self, data, T, max_T):
@@ -80,10 +85,10 @@ class Dataset(data.Dataset):
         x['test_scores'] = self.get_data(trajectory, 'test_scores')
         x['labels'] = self.get_data(trajectory, 'labels')
 
-        x['pid'] = int(trajectory.pid[:3] + trajectory.pid[6:])
-        x['flag_ad'] = torch.tensor(trajectory.flag_ad)
-        x['trajectory_id'] = np.array(trajectory.trajectory_id)
-        x['first_occurance_ad'] = trajectory.first_occurance_ad
+#        x['pid'] = int(trajectory.pid[:3] + trajectory.pid[6:])
+#        x['flag_ad'] = torch.tensor(trajectory.flag_ad)
+#        x['trajectory_id'] = np.array(trajectory.trajectory_id)
+#        x['first_occurance_ad'] = trajectory.first_occurance_ad
 
         y = self.get_data(trajectory, 'labels')[-1, 0]        
         return x, y
@@ -93,3 +98,20 @@ class Dataset(data.Dataset):
         x = [trajectory.visits[idx].data[key] for idx in visits_id]
         x = np.vstack(x)
         return torch.from_numpy(x).float()
+    
+    def return_all(self):
+        X = []
+        Y = []
+        for trajectory in self.trajectories:
+            x = {}
+            x['tau'] = trajectory.tau
+            x['img_features'] = self.get_data(trajectory, 'img_features')
+            x['covariates'] = self.get_data(trajectory, 'covariates')
+            x['test_scores'] = self.get_data(trajectory, 'test_scores')
+            x['labels'] = self.get_data(trajectory, 'labels')
+
+            y = self.get_data(trajectory, 'labels')[-1, 0]        
+            
+            X.append(x)
+            Y.append(y.item())
+        return X,torch.LongTensor(Y)

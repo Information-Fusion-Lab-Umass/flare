@@ -12,6 +12,10 @@ import pickle
 import numpy as np
 from src import datagen, utils, engine, evaluate
 import copy
+from skorch import NeuralNetClassifier
+import torch
+import torch.nn as nn
+
 #  os.environ['CUDA_VISIBLE_DEVICES']=''
 
 def main(config_file):
@@ -26,7 +30,7 @@ def main(config_file):
 
 
     max_T = config['datagen']['max_T'] # Load data and get image paths
-    num_classes = config['model']['module_task']['num_classes'] 
+    num_classes = config['model']['module__task']['num_classes'] 
 
     t = time()
     path_load = config['data'].pop('path_load')
@@ -43,7 +47,7 @@ def main(config_file):
 
     # Datagens
     t = time()
-    datagen_train, datagen_val, data_train_size = \
+    datagen_train, datagen_val, datasets_train, datasets_val, data_train_size = \
             datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
     class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
@@ -72,23 +76,31 @@ def main(config_file):
             yaml.dump(config, f, default_flow_style=False)
 
         # Define Classification model
-        model = engine.Engine(class_wt, model_config)
-        model_list[iteration] = model
+        #model = engine.Engine(class_wt, model_config)
+        #model_list[iteration] = model
 
-        # Train the model
-        if config['train_model']:
-            print('Training the model ...')
-            batch_size, dataload_method = config['datagen']['batch_size'], config['datagen']['dataload_method']
-            model_list[iteration].train(datagen_train, datagen_val, exp_dir, dataload_method, \
-                                        data_train_size, batch_size, **config['train'])
+        load_model = model_config.pop('load_model')
+        early_stopping = model_config.pop('early_stopping')
+        lr = model_config.pop('learning_rate')
+        weight_decay = model_config.pop('weight_decay')
 
-        # Test the model
-        if config['test_model']:
-            print('Testing the model ...')
-            print('Train data : ')
-            train_cnfmats[iteration] = model_list[iteration].test(datagen_train, exp_dir, 'train')
-            print('Val data : ')
-            val_cnfmats[iteration] = model_list[iteration].test(datagen_val, exp_dir, 'val')
+        device = torch.device("cpu")
+        init = model_config.pop('init')
+
+        # Define sklearn wrapper
+
+        net = NeuralNetClassifier(
+                engine.Model, 
+                max_epochs=1,
+                lr=0.1,
+                criterion=nn.CrossEntropyLoss,
+                **model_config,
+                module__device=device,
+                module__class_wt=class_wt
+            )
+        X,Y = datasets_train[0].return_all()
+
+        net.fit(X,Y)
 
     if(num_iter > 1):
         print('Calculating aggregate results...')
@@ -106,26 +118,3 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     args = parser.parse_args()
     dgt, dgv = main(args.config)
-    
-    # with open('../data/datagen_val.pickle','wb') as f:
-    #    pickle.dump(dgv,f)
-    
-#    for i, datagen in enumerate(dgv):
-#        num_traj = 0
-#        minval = np.inf; maxval = np.NINF
-#        for k, (x, y) in enumerate(datagen):
-#            num_traj += x['img_features'].size()[0]
-#            traj_id = x['trajectory_id'].data.numpy()
-#            img_features = x['img_features'].data.numpy()
-#            minval = min(minval, np.min(img_features))
-#            maxval = max(maxval, np.max(img_features))
-#        print('T = {}, traj = {}, min = {}, max = {}'.\
-#              format(i, num_traj, minval, maxval))
-
-            #  print(x.keys())
-            #  print('y : ', y)
-            #  print('tau : ', x['tau'])
-            #  print('pid : ', x['pid'])
-            #  print('traj_id : ', x['trajectory_id'])
-            #  print('flag_ad : ', x['flag_ad'])
-            #  print('first_occurance_ad : ', x['first_occurance_ad'])

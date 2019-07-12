@@ -8,7 +8,7 @@ import torch.nn as nn
 import yaml
 #import ipdb
 import pickle
-from src import models, utils, evaluate, unittest
+from src import models, utils, evaluate, unittest_
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -17,8 +17,8 @@ import random
 #  torch.backends.cudnn.enabled = False
 
 class Model(nn.Module):
-    def __init__(self, device, class_wt, module_image, module_temporal, \
-            module_forecast, module_task, fusion, aux_loss="MSE", aux_loss_scale=1.0):
+    def __init__(self, device, class_wt, image, temporal, \
+            forecast, task, fusion, aux_loss="MSE", aux_loss_scale=1.0):
         super(Model, self).__init__()
         # Model names file
         with open('../src/models/models.yaml') as f:
@@ -29,8 +29,8 @@ class Model(nn.Module):
         self.aux_loss_scale = aux_loss_scale
 
         # Load model: image architecture
-        self.model_image_name = module_image.pop('name')
-        self.model_image = eval(model_dict[self.model_image_name])(**module_image)
+        self.model_image_name = image.pop('name')
+        self.model_image = eval(model_dict[self.model_image_name])(**image)
         self.model_image = self.model_image.to(device)
         
         if self.fusion == 'concat_feature':
@@ -43,20 +43,20 @@ class Model(nn.Module):
             self.model_cov = self.model_cov.to(device)
 
         # Load model: temporal architecture
-        self.model_temporal_name = module_temporal.pop('name')
+        self.model_temporal_name = temporal.pop('name')
         self.model_temporal = eval(model_dict[self.model_temporal_name])\
-                (device, **module_temporal)
+                (device, **temporal)
         self.model_temporal = self.model_temporal.to(device)
         
         # Load model: forecast architecture
-        model_forecast_name = module_forecast.pop('name')
+        model_forecast_name = forecast.pop('name')
         self.model_forecast = eval(model_dict[model_forecast_name])\
-                (device, **module_forecast)
+                (device, **forecast)
         self.model_forecast = self.model_forecast.to(device)
 
         # Load model: Task specific architecture
-        model_task_name = module_task.pop('name')
-        self.model_task = eval(model_dict[model_task_name])(**module_task)
+        model_task_name = task.pop('name')
+        self.model_task = eval(model_dict[model_task_name])(**task)
         self.model_task = self.model_task.to(device)
 
         self.class_wt = torch.tensor(class_wt).float().to(device)
@@ -65,13 +65,13 @@ class Model(nn.Module):
         y = y.long().to(self.device)
         return nn.CrossEntropyLoss(weight = self.class_wt)(y_pred, y)
  
-    def forward(self, data_batch, on_gpu=False):
+    def forward(self, img_features, covariates, test_scores, tau, labels, on_gpu=False):
         # Extract data components
-        x_img_data = data_batch['img_features']
-        x_cov_data = data_batch['covariates']
-        x_long_data = data_batch['test_scores']
-        x_time_data = data_batch['tau']
-        x_labels = data_batch['labels']
+        x_img_data = img_features
+        x_cov_data = covariates
+        x_long_data = test_scores
+        x_time_data = tau
+        x_labels = labels
         (B, T, _) = x_img_data.shape
        
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
@@ -141,7 +141,7 @@ class Model(nn.Module):
                 for i in range(T-1):
                     ypred_aux = self.model_task(x_cache[:,i,:])
                     lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
-        return ypred, self.aux_loss_scale * lossval
+        return ypred #, self.aux_loss_scale * lossval
 
 class Engine:
     def __init__(self, class_wt, model_config):
@@ -340,74 +340,6 @@ class Engine:
         cnf_matrix.save(exp_dir, filename)
         return cnf_matrix
 
-    def test_MCDropout(self, datagen_test, exp_dir, filename, num_repeat):
-        self.model.eval()
 
-        for m in self.model.modules():
-            if m.__class__.__name__.startswith('Dropout'):
-                m.train()
-
-        numT = len(datagen_test)
-        cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
-
-        for idx, datagen in enumerate(datagen_test):
-            for step, (x_batch, y_batch) in enumerate(datagen):
-                y_pred_batch_agg = []
-                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
-                y_batch = y_batch.to(self.device)
-                for i in range(num_repeat):
-                    y_pred_batch, _ = self.model(x_batch)
-                    y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
-                    y_pred_batch_agg.append(y_pred_batch)
-                y_batch_avg = np.mean(y_pred_batch_agg, axis=0)
-                y_batch_std = np.std(y_pred_batch_agg, axis=0)
-                #  print(idx)
-                #  print(y_pred_batch)
-                if step == 0:
-                    y_pred, y, tau = y_batch_avg, y_batch, x_batch['tau']
-                else:
-                    y_pred = torch.cat((y_pred, y_batch_avg), 0)
-                    y = torch.cat((y, y_batch), 0)
-                    tau = torch.cat((tau, x_batch['tau']), 0)
-
-            tau = tau.cpu().data.numpy()
-            for t in range(numT - idx):
-                loc = np.where(tau == t + 1)
-                cnf_matrix.update(idx, t, y_pred[loc].cpu(), y[loc].cpu())
-
-        cnf_matrix.save(exp_dir, filename)
-        return cnf_matrix
-
-    def test_stats(self, datagen_test):
-        self.model.eval()
-        numT = len(datagen_test)
-        data = []
-        for idx, datagen in enumerate(datagen_test):
-            for step, (x_batch, y_batch) in enumerate(datagen):
-
-                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
-                y_batch = y_batch.to(self.device)
-                y_pred_batch, _ = self.model(x_batch)
-                y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
-                if step == 0:
-                    y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
-                    pid = x_batch['pid']
-                    trajectory_id = x_batch['trajectory_id']
-                else:
-                    y_pred = torch.cat((y_pred, y_pred_batch), 0)
-                    y = torch.cat((y, y_batch), 0)
-                    tau = torch.cat((tau, x_batch['tau']), 0)
-                    pid = torch.cat((pid,x_batch['pid']),0)
-                    trajectory_id = torch.cat((trajectory_id, \
-                            x_batch['trajectory_id']),0)
-
-            dataT = {}
-            dataT['y'] = y
-            dataT['y_pred'] = y_pred
-            dataT['tau'] = tau
-            dataT['pid'] = pid
-            dataT['trajectory_id'] = trajectory_id
-            data.append(dataT)
-        return data
 
 
