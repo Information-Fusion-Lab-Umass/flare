@@ -1,4 +1,7 @@
-# Data
+exp_id: T4_rand_debug
+output_dir: &output ../outputs/skorch-debug
+
+#Data
 data:
     path_load: ../data/data_norm_test.pickle
     path: ../data/TADPOLE_D1_D2_proc_norm_test.csv

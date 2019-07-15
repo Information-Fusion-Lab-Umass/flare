@@ -14,19 +14,27 @@ from src import datagen, utils, engine, evaluate, scoring
 from src import forecastNet
 import copy
 from skorch import NeuralNetClassifier
-from skorch.callbacks import EpochScoring
+from skorch.utils import noop
+from skorch.callbacks import EpochScoring, BatchScoring
 from sklearn.metrics import f1_score, roc_auc_score,make_scorer
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import torch
 import torch.nn as nn
 from scipy.stats import expon
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import ipdb
 
 def main(config_file,debug,numT,n_iter):
     # Parser config file
     with open(config_file) as f:
         config = yaml.load(f,Loader=yaml.FullLoader)
+
+    main_exp_dir = os.path.join(config['output_dir'], config['exp_id'])
+    if(os.path.exists(main_exp_dir)):
+        os.mkdir(main_exp_dir)
 
     max_T = config['datagen']['max_T'] # Load data and get image paths
     num_classes = config['model']['module__task']['params']['num_classes'] 
@@ -63,17 +71,23 @@ def main(config_file,debug,numT,n_iter):
 
     # Define sklearn wrapper and scoring function
 
-    f1_scorer = make_scorer(scoring.drop_last_f1_score, average = 'macro')
-    auc = EpochScoring(scoring='roc_auc', lower_is_better=True)
+    f1_scorer = make_scorer(scoring.f1_score, average = 'macro')
+    auc = EpochScoring(scoring='roc_auc', lower_is_better=False)
     f1 = EpochScoring(scoring=f1_scorer,lower_is_better=False)
+
+    clf_loss_train = BatchScoring(scoring.clf_loss_train, on_train=True, target_extractor=noop)
+    aux_loss_train = BatchScoring(scoring.aux_loss_train, on_train=True, target_extractor=noop)
+
+    clf_loss_valid = BatchScoring(scoring.clf_loss_valid, on_train=False, target_extractor=noop)
+    aux_loss_valid = BatchScoring(scoring.aux_loss_valid, on_train=False, target_extractor=noop)
 
     if(debug):
         net = forecastNet.forecastNet(
                 engine.Model, 
-                max_epochs=1,
+                max_epochs=2,
                 batch_size=128,
                 device = device,
-                callbacks = [f1],
+                callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
                 optimizer=torch.optim.Adam,
                 criterion=nn.CrossEntropyLoss,
                 **model_config,
@@ -89,7 +103,7 @@ def main(config_file,debug,numT,n_iter):
         net = forecastNet.forecastNet(
                 engine.Model, 
                 device = device,
-                callbacks = [f1],
+                callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
                 optimizer=torch.optim.Adam,
                 criterion=nn.CrossEntropyLoss,
                 **model_config,
@@ -113,7 +127,69 @@ def main(config_file,debug,numT,n_iter):
     print('Search!')
     search.fit(X,Y)
 
-    print(rs.best_score_, rs.best_params_)
+    print(search.best_score_, search.best_params_)
+    create_loss_graphs(search,main_exp_dir,debug)
+
+def create_loss_graphs(search, out_dir, debug):
+    clf_loss_train = search.best_estimator_.history[:,'clf_loss_train']
+    aux_loss_train = search.best_estimator_.history[:,'aux_loss_train']
+    total_loss_train = search.best_estimator_.history[:,'train_loss'] 
+
+    clf_loss_valid = search.best_estimator_.history[:,'clf_loss_valid']
+    aux_loss_valid = search.best_estimator_.history[:,'aux_loss_valid']
+    total_loss_valid = search.best_estimator_.history[:,'valid_loss'] 
+    epochs = [i for i in range(len(search.best_estimator_.history))]
+
+    if(not debug):
+        txtstr = '\n'.join((
+            r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
+            r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
+            r'$\mathrm{epochs}=%d' % (search.best_params_['max_epochs'], ),
+            r'$\mathrm{bsize}=%d' % (search.best_params_['batch_size'], )))
+
+    else:
+        txtstr = '\n'.join((
+            r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
+            r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], )))
+
+    # Set up bounding box parameters
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+
+    f = plt.figure()
+    axes = f.add_subplot(1,1,1)
+
+    plt.plot(epochs, total_loss_train, c='g', label = 'Train Loss')
+    plt.plot(epochs, total_loss_valid, c='r', label = 'Validation Loss')
+    plt.title('Train and Test Loss Curves')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+
+    # Place text box with best parameters
+    plt.text(0.85,0.79,txtstr, ha = 'center', va = 'center', transform=axes.transAxes, bbox=props)
+    plt.savefig(out_dir + '/train_v_train.png', dpi = 300)
+    plt.close()
+
+    plt.figure()
+    plt.plot(epochs, clf_loss_train, c='g', label = 'Train Loss Clf')
+    plt.plot(epochs, aux_loss_train, c='b', label = 'Train Loss Aux')
+    plt.title('Train Loss Curves')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+    plt.savefig(out_dir + '/train_loss.png', dpi = 300)
+    plt.close()
+
+
+    plt.figure()
+    plt.plot(epochs, clf_loss_valid, c='g', label = 'Valid Loss Clf')
+    plt.plot(epochs, aux_loss_valid, c='b', label = 'Valid Loss Aux')
+    plt.title('Validation Loss Curves')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+    plt.savefig(out_dir + '/valid_loss.png', dpi = 300)
+    plt.close()
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
@@ -123,4 +199,5 @@ if __name__=='__main__':
     parser.add_argument('--n_iter', type=int, default=30)
     args = parser.parse_args()
     main(args.config,args.debug,args.numT,args.n_iter)
+   
 

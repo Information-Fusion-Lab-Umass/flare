@@ -14,11 +14,14 @@ class forecastNet(NeuralNetClassifier):
         self.module_.train()        
         self.optimizer_.zero_grad()
         y_pred, aux_loss = self.infer(Xi, **fit_params)
-#       ipdb.set_trace()
+
         clf_loss = self.get_loss(y_pred, yi, X=Xi, training=True)
 
         loss = clf_loss + aux_loss
-#        self.history.record_batch('aux_loss', aux_loss)
+
+        self.history.record_batch('aux_loss_train', aux_loss.item())
+        self.history.record_batch('clf_loss_train', clf_loss.item())
+
         loss.backward()
 
         self.notify(
@@ -36,8 +39,12 @@ class forecastNet(NeuralNetClassifier):
     def validation_step(self, Xi, yi, **fit_params):
         self.module_.eval()
         with torch.no_grad():
-            y_pred, _ = self.infer(Xi, **fit_params)
-            loss = self.get_loss(y_pred, yi, X=Xi, training=False)
+            y_pred, aux_loss = self.infer(Xi, **fit_params)
+            clf_loss = self.get_loss(y_pred, yi, X=Xi, training=False)
+            self.history.record_batch('aux_loss_valid', aux_loss.item())
+            self.history.record_batch('clf_loss_valid', clf_loss.item())
+            loss = aux_loss + clf_loss
+            
         return {
             'loss': loss,
             'y_pred': y_pred,
