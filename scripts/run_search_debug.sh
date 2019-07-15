@@ -8,6 +8,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --time=4-00:00:00          # HH:MM:SS
 
-python3 main_randomized_search.py --config=../configs/flare_skorch.yaml --debug=1 --numT=4
+python3 main_randomized_search.py --config=../configs/flare_skorch.yaml --debug=1 --numT=4 --n_iter=1
 sleep 1
 exit

@@ -23,7 +23,7 @@ from scipy.stats import expon
 
 import ipdb
 
-def main(config_file,debug,numT):
+def main(config_file,debug,numT,n_iter):
     # Parser config file
     with open(config_file) as f:
         config = yaml.load(f,Loader=yaml.FullLoader)
@@ -86,7 +86,6 @@ def main(config_file,debug,numT):
                     'optimizer__weight_decay': expon(scale=0.01)
                  }
     else:
-        print('Test false')
         net = forecastNet.forecastNet(
                 engine.Model, 
                 device = device,
@@ -108,11 +107,11 @@ def main(config_file,debug,numT):
     X,Y = datasets_all[numT-1].return_all()
     print('X length: ', X.__len__())
     print('Y length: ', Y.__len__())
+    
+    search = RandomizedSearchCV(net, params, refit=True, cv=3, scoring=f1_scorer, verbose=1, n_iter=n_iter)
 
-    rs = RandomizedSearchCV(net, params, refit=True, cv=3, scoring=f1_scorer, verbose=1, n_iter=30)
-
-    print('Randomized Search!')
-    rs.fit(X,Y)
+    print('Search!')
+    search.fit(X,Y)
 
     print(rs.best_score_, rs.best_params_)
 
@@ -121,6 +120,7 @@ if __name__=='__main__':
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
     parser.add_argument('--debug', type=int, default=0)
     parser.add_argument('--numT', type=int, default=1)
+    parser.add_argument('--n_iter', type=int, default=30)
     args = parser.parse_args()
-    main(args.config,args.debug,args.numT)
+    main(args.config,args.debug,args.numT,args.n_iter)
 
