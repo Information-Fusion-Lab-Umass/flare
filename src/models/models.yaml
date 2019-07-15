@@ -8,10 +8,14 @@ multimodal1: models.TadpoleFeat1
 long: models.Longitudinal
 cov: models.Covariate
 
+long_no_bn: models.Longitudinal_no_bn
+cov_no_bn: models.Covariate_no_bn
+
 # Temporal models     
 lstm: models.LSTM
 rnn: models.RNN
 forecastRNN: models.forecastRNN
+forecastRNN_no_bn: models.forecastRNN_no_bn
 
 # Forecasting models     
 append_time: models.AppendTime
@@ -20,3 +24,4 @@ multiply_time: models.MultiplyTime
 # Task specific models
 dx: models.ANN_DX
 dx1: models.ANN_DX_1
+dx_no_bn: models.ANN_DX_no_bn

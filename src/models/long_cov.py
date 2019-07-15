@@ -19,3 +19,19 @@ class Covariate(nn.Module):
         
     def forward(self, x):        
         return F.relu(self.bn(self.affine(x)))
+
+class Longitudinal_no_bn(nn.Module):
+    def __init__(self):
+        super(Longitudinal_no_bn, self).__init__()
+        self.affine = nn.Linear(4, 10)
+        
+    def forward(self, x): 
+        return F.relu((self.affine(x)))
+
+class Covariate_no_bn(nn.Module):
+    def __init__(self):
+        super(Covariate_no_bn, self).__init__()
+        self.affine = nn.Linear(3, 10)
+        
+    def forward(self, x):        
+        return F.relu(self.affine(x))

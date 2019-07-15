@@ -43,9 +43,6 @@ class forecastRNN(nn.Module):
     def forward(self, x, t): 
         x_final = x[:, -1, :]
 
-#        print('X Max: ', np.max(x_final.cpu().detach().numpy()))
-#        print('X Min: ', np.min(x_final.cpu().detach().numpy()))
-
         x = x[:, :-1, :]
         (bsize, T, nfeat) = x.shape
         # Forward pass through the RNN
@@ -76,12 +73,9 @@ class forecastRNN(nn.Module):
         lossval += self.loss(x_pred, x_final)
         return x_pred, lossval, y[:,:,:]
 
-class forecastRNN_BPTT(nn.Module):
-    '''
-    Backprop through time
-    '''
+class forecastRNN_no_bn(nn.Module):
     def __init__(self, device, num_input, num_timesteps):
-        super(forecastRNN, self).__init__()
+        super(forecastRNN_no_bn, self).__init__()
         self.T = 1 if num_timesteps==0 else num_timesteps
         self.num_timesteps = num_timesteps
         self.device = device
@@ -89,17 +83,14 @@ class forecastRNN_BPTT(nn.Module):
         # Autoencoder for feature prediction
         self.autoenc = nn.Sequential(
                 nn.Linear(num_input, 1000),
-                nn.BatchNorm1d(1000),
                 nn.Dropout(p=0.5),
                 nn.ReLU(),
 
                 nn.Linear(1000, 1000),
-                nn.BatchNorm1d(1000),
                 nn.Dropout(p=0.5),
                 nn.ReLU(),
 
-                nn.Linear(1000, num_input),
-                nn.BatchNorm1d(num_input)
+                nn.Linear(1000, num_input)
                 )
 
         self.rnn = nn.RNN(input_size = num_input,
@@ -117,9 +108,6 @@ class forecastRNN_BPTT(nn.Module):
     def forward(self, x, t): 
         x_final = x[:, -1, :]
 
-        #print('X Max: ', np.max(x_final.cpu().detach().numpy()))
-        #print('X Min: ', np.min(x_final.cpu().detach().numpy()))
-        # more for auxilliary
         x = x[:, :-1, :]
         (bsize, T, nfeat) = x.shape
         # Forward pass through the RNN

@@ -32,29 +32,43 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
             for key in src_data['train_ids'] if key in src_data}
     data_val = {key : src_data[key] \
             for key in src_data['test_ids'] if key in src_data}
+    
+    src_data.pop('train_ids',None)
+    src_data.pop('test_ids',None)
+     
 
     data_train_size = 0
 
+    # Get raw data generators
+    datasets_all = []
+    datagen_all = []
 
-    # Get train data generators
-    datasets_train = []
-    datagen_train = []
     for T in range(2, max_visits + 1):
-        dataset = Dataset(data_train, T, max_T)
-        datasets_train.append(dataset)
-        dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
-        datagen_train.append(dataloader)
+        dataset = Dataset(src_data, T, max_T)
+        datasets_all.append(dataset)
+        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
+        datagen_all.append(dataloader)
         data_train_size += len(dataset)
 
-    # Get validation data generators
-    datasets_val = []
-    datagen_val = []
-    for T in range(2, max_visits + 1):
-        dataset = Dataset(data_val, T, max_T)
-        datasets_val.append(dataset)
-        dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
-        datagen_val.append(dataloader)
-    return datagen_train, datagen_val, datasets_train, datasets_val, data_train_size
+   # # Get train data generators
+   # datasets_train = []
+   # datagen_train = []
+   # for T in range(2, max_visits + 1):
+   #     dataset = Dataset(data_train, T, max_T)
+   #     datasets_train.append(dataset)
+   #     dataloader = data.DataLoader(dataset, batch_size, shuffle = True)
+   #     datagen_train.append(dataloader)
+   #     data_train_size += len(dataset)
+
+   # # Get validation data generators
+   # datasets_val = []
+   # datagen_val = []
+   # for T in range(2, max_visits + 1):
+   #     dataset = Dataset(data_val, T, max_T)
+   #     datasets_val.append(dataset)
+   #     dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
+   #     datagen_val.append(dataloader)
+    return datagen_all, datasets_all, data_train_size
 
 class Dataset(data.Dataset):
     def __init__(self, data, T, max_T):
@@ -114,4 +128,4 @@ class Dataset(data.Dataset):
             
             X.append(x)
             Y.append(y.item())
-        return X,torch.LongTensor(Y)
+        return np.asarray(X),torch.LongTensor(Y)

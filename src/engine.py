@@ -22,15 +22,15 @@ class Model(nn.Module):
         super(Model, self).__init__()
         # Model names file
         with open('../src/models/models.yaml') as f:
-            model_dict = yaml.load(f)
+            model_dict = yaml.load(f, Loader=yaml.FullLoader)
         self.fusion = fusion
         self.device = device
         self.aux_loss = aux_loss #model_config.pop('aux_loss','MSE')
         self.aux_loss_scale = aux_loss_scale
 
         # Load model: image architecture
-        self.model_image_name = image.pop('name')
-        self.model_image = eval(model_dict[self.model_image_name])(**image)
+        self.model_image_name = image['name']
+        self.model_image = eval(model_dict[self.model_image_name])(**image['params'])
         self.model_image = self.model_image.to(device)
         
         if self.fusion == 'concat_feature':
@@ -43,20 +43,20 @@ class Model(nn.Module):
             self.model_cov = self.model_cov.to(device)
 
         # Load model: temporal architecture
-        self.model_temporal_name = temporal.pop('name')
+        self.model_temporal_name = temporal['name']
         self.model_temporal = eval(model_dict[self.model_temporal_name])\
-                (device, **temporal)
+                (device, **temporal['params'])
         self.model_temporal = self.model_temporal.to(device)
         
         # Load model: forecast architecture
-        model_forecast_name = forecast.pop('name')
+        model_forecast_name = forecast['name']
         self.model_forecast = eval(model_dict[model_forecast_name])\
-                (device, **forecast)
+                (device) #**forecast)
         self.model_forecast = self.model_forecast.to(device)
 
         # Load model: Task specific architecture
-        model_task_name = task.pop('name')
-        self.model_task = eval(model_dict[model_task_name])(**task)
+        model_task_name = task['name']
+        self.model_task = eval(model_dict[model_task_name])(**task['params'])
         self.model_task = self.model_task.to(device)
 
         self.class_wt = torch.tensor(class_wt).float().to(device)
@@ -119,7 +119,8 @@ class Model(nn.Module):
 
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        if self.model_temporal_name == 'forecastRNN':
+#        print('Shape of x_feat: ',x_feat.shape)
+        if self.model_temporal_name[:11] == 'forecastRNN':
             x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
 
         else:
@@ -141,7 +142,7 @@ class Model(nn.Module):
                 for i in range(T-1):
                     ypred_aux = self.model_task(x_cache[:,i,:])
                     lossval += self.loss(ypred_aux, x_labels[:,i+1,0])
-        return ypred #, self.aux_loss_scale * lossval
+        return ypred, self.aux_loss_scale * lossval
 
 class Engine:
     def __init__(self, class_wt, model_config):

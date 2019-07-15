@@ -21,7 +21,6 @@ import torch
 import torch.nn as nn
 from scipy.stats import expon
 
-
 import ipdb
 
 
@@ -57,7 +56,6 @@ def main(config_file):
     # Datagens
     t = time()
 
-
     # Catch dataset_size % batch_size == 1 issue with batchnorm 1d:
 
     use_cuda = torch.cuda.is_available()
@@ -66,6 +64,8 @@ def main(config_file):
     datagen_all, datasets_all, data_train_size = \
             datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
+
+    print('Dataset Length', datasets_all[0].__len__())
     class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
     print(class_wt)
 
@@ -106,8 +106,8 @@ def main(config_file):
         # Define randomized search parameters
         params = {
         #            'max_epochs': [15,20,25,30,35,40],
-                    'optimizer__lr': [.001],
-                    'optimizer__weight_decay': [.001,.008]
+                    'optimizer__lr': expon(scale = 0.01),
+                    'optimizer__weight_decay': expon(scale=0.001)
                  }
         
         # Define sklearn wrapper and scoring function
@@ -117,7 +117,7 @@ def main(config_file):
         f1 = EpochScoring(scoring=f1_scorer,lower_is_better=False)
         net = forecastNet.forecastNet(
                 engine.Model, 
-                max_epochs=50,
+                max_epochs=2,
                 batch_size=128,
                 device = device,
        #         lr=0.001,
@@ -129,14 +129,12 @@ def main(config_file):
                 module__class_wt=class_wt
             )
         X,Y = datasets_all[0].return_all()
+        print('X length: ', X.__len__())
 
-        gs = GridSearchCV(net, params, cv=3, scoring=f1_scorer, verbose=1)
-
+        rs = RandomizedSearchCV(net, params, refit=False, cv=4, scoring=f1_scorer, verbose=1)
 
         print('Grid Search!')
-        gs.fit(X,Y)
-
-        print(gs.best_score_, gs.best_params_)
+        rs.fit(X,Y)
 
     if(num_iter > 1):
         print('Calculating aggregate results...')
@@ -147,7 +145,7 @@ def main(config_file):
         with open(os.path.join(main_exp_dir,'results/agg_metrics_dict.pickle'),'wb') as f:
             pickle.dump(agg_metrics,f)
 
-#    return datagen_train, datagen_val
+    return datagen_train, datagen_val
 
 
 if __name__=='__main__':
