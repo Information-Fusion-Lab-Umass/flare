@@ -146,6 +146,7 @@ class Visit:
                    'Dementia':2,
                    'NL to Dementia':2
                    }
+
         dx = df['DX']
         if dx != dx:
             dx = 'NL'

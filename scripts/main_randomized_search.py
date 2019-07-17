@@ -27,13 +27,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import ipdb
 
-def main(config_file,debug,numT,n_iter):
+def main(config_file,debug,numT,n_iter,exp_id):
     # Parser config file
     with open(config_file) as f:
         config = yaml.load(f,Loader=yaml.FullLoader)
 
-    main_exp_dir = os.path.join(config['output_dir'], config['exp_id'])
-    if(os.path.exists(main_exp_dir)):
+    main_exp_dir = os.path.join(config['output_dir'], exp_id)
+    if(not os.path.exists(main_exp_dir)):
         os.mkdir(main_exp_dir)
 
     max_T = config['datagen']['max_T'] # Load data and get image paths
@@ -128,9 +128,9 @@ def main(config_file,debug,numT,n_iter):
     search.fit(X,Y)
 
     print(search.best_score_, search.best_params_)
-    create_loss_graphs(search,main_exp_dir,debug)
+    create_loss_graphs(search,main_exp_dir,debug,T=numT)
 
-def create_loss_graphs(search, out_dir, debug):
+def create_loss_graphs(search, main_exp_dir, debug, T):
     clf_loss_train = search.best_estimator_.history[:,'clf_loss_train']
     aux_loss_train = search.best_estimator_.history[:,'aux_loss_train']
     total_loss_train = search.best_estimator_.history[:,'train_loss'] 
@@ -144,13 +144,16 @@ def create_loss_graphs(search, out_dir, debug):
         txtstr = '\n'.join((
             r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
             r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
-            r'$\mathrm{epochs}=%d' % (search.best_params_['max_epochs'], ),
-            r'$\mathrm{bsize}=%d' % (search.best_params_['batch_size'], )))
+            r'$\mathrm{epochs}=%d$' % (search.best_params_['max_epochs'], ),
+            r'$\mathrm{bsize}=%d$' % (search.best_params_['batch_size'], ),
+            r'$\mathrm{T}=%d$' % (T,) ))
 
     else:
         txtstr = '\n'.join((
             r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
-            r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], )))
+            r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
+            r'$\mathrm{T}=%d$' % (T,) ))
+
 
     # Set up bounding box parameters
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
@@ -166,8 +169,8 @@ def create_loss_graphs(search, out_dir, debug):
     plt.legend()
 
     # Place text box with best parameters
-    plt.text(0.85,0.79,txtstr, ha = 'center', va = 'center', transform=axes.transAxes, bbox=props)
-    plt.savefig(out_dir + '/train_v_train.png', dpi = 300)
+    plt.text(0.85,0.70,txtstr, ha = 'center', va = 'center', transform=axes.transAxes, bbox=props)
+    plt.savefig(main_exp_dir + '/train_v_train.png', dpi = 300)
     plt.close()
 
     plt.figure()
@@ -177,7 +180,7 @@ def create_loss_graphs(search, out_dir, debug):
     plt.xlabel('epochs')
     plt.ylabel('loss')
     plt.legend()
-    plt.savefig(out_dir + '/train_loss.png', dpi = 300)
+    plt.savefig(main_exp_dir + '/train_loss.png', dpi = 300)
     plt.close()
 
 
@@ -188,7 +191,7 @@ def create_loss_graphs(search, out_dir, debug):
     plt.xlabel('epochs')
     plt.ylabel('loss')
     plt.legend()
-    plt.savefig(out_dir + '/valid_loss.png', dpi = 300)
+    plt.savefig(main_exp_dir + '/valid_loss.png', dpi = 300)
     plt.close()
 
 if __name__=='__main__':
@@ -197,7 +200,8 @@ if __name__=='__main__':
     parser.add_argument('--debug', type=int, default=0)
     parser.add_argument('--numT', type=int, default=1)
     parser.add_argument('--n_iter', type=int, default=30)
+    parser.add_argument('--exp_id', type=str, default='debug')
     args = parser.parse_args()
-    main(args.config,args.debug,args.numT,args.n_iter)
+    main(args.config,args.debug,args.numT,args.n_iter,args.exp_id)
    
 

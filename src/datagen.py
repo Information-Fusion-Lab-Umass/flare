@@ -27,6 +27,19 @@ def get_data(path, train_ids_path, test_ids_path,
     data['test_ids'] = test_ids
     return data
 
+def get_data_clf(path, min_visits = 1, only_consecutive = True):
+    data_feat = pd.read_csv(path, dtype = object)
+    id_list = list(set(data_feat.PTID.values))
+    data = {}
+    for pid in tqdm(id_list):
+        data_pid = data_feat[data_feat.PTID==pid]
+        data_pid = patient.Patient(pid, data_pid, only_consecutive)
+        if data_pid.num_visits >= min_visits:
+            data[pid] = data_pid
+        sys.stdout.flush()
+
+    return data
+
 def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     data_train = {key : src_data[key] \
             for key in src_data['train_ids'] if key in src_data}
@@ -36,7 +49,6 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     src_data.pop('train_ids',None)
     src_data.pop('test_ids',None)
      
-
     data_train_size = 0
 
     # Get raw data generators
@@ -128,4 +140,5 @@ class Dataset(data.Dataset):
             
             X.append(x)
             Y.append(y.item())
+        print(np.asarray(X).shape, torch.LongTensor(Y).shape)
         return np.asarray(X),torch.LongTensor(Y)

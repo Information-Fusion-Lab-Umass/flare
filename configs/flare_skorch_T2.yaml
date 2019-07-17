@@ -1,3 +1,4 @@
+exp_id: T2_rand_iter100
 output_dir: &output ../outputs/skorch-debug
 
 #Data
