@@ -114,8 +114,8 @@ def main(config_file,debug,numT,n_iter,exp_id):
         params = {
                     'max_epochs': [15,20,25,30,35,40,50],
                     'batch_size': [32,64,128],
-                    'optimizer__lr': expon(scale = 0.01),
-                    'optimizer__weight_decay': expon(scale=0.01)
+                    'optimizer__lr': expon(scale = 0.001),
+                    'optimizer__weight_decay': expon(scale=0.001)
                  }
 
     X,Y = datasets_all[numT-1].return_all()
@@ -146,13 +146,15 @@ def create_loss_graphs(search, main_exp_dir, debug, T):
             r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
             r'$\mathrm{epochs}=%d$' % (search.best_params_['max_epochs'], ),
             r'$\mathrm{bsize}=%d$' % (search.best_params_['batch_size'], ),
-            r'$\mathrm{T}=%d$' % (T,) ))
+            r'$\mathrm{T}=%d$' % (T,),
+            r'$\mathrm{f1}=%.8f$' % (search.best_score_,) ))
 
     else:
         txtstr = '\n'.join((
             r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
             r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
-            r'$\mathrm{T}=%d$' % (T,) ))
+            r'$\mathrm{T}=%d$' % (T,),
+            r'$\mathrm{f1}=%.8f$' % (search.best_score_,) ))
 
 
     # Set up bounding box parameters
