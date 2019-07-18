@@ -88,8 +88,10 @@ class Dataset(data.Dataset):
         self.data = data
 
         # Collect trajectories from all patients with key = T
+        # and whose first visit isn't AD already 
         filt_traj = lambda x: [traj for traj in x \
-                            if max(list(traj.visits.keys())) < max_T]
+                            if max(list(traj.visits.keys())) < max_T and \
+                            traj.visits[list(traj.visits.keys())[0]].data['labels'][0] != 2]
         self.trajectories = [filt_traj(self.data[pid].trajectories[T]) \
                 for pid in self.data \
                 if T in self.data[pid].trajectories]     
