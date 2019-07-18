@@ -80,7 +80,6 @@ class Model(nn.Module):
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         if self.fusion == 'concat_feature':
-                
            # print('Img Input Max: ', np.max(x_img_data.cpu().detach().numpy()))
            # print('Img Input Min: ', np.min(np.abs(x_img_data.cpu().detach().numpy())))
             x_img_feat = self.model_image(x_img_data)

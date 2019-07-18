@@ -104,6 +104,7 @@ def main(config_file,debug,numT,n_iter,exp_id):
                 engine.Model, 
                 device = device,
                 callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
+                max_epochs = 60,
                 optimizer=torch.optim.Adam,
                 criterion=nn.CrossEntropyLoss,
                 **model_config,
@@ -112,8 +113,8 @@ def main(config_file,debug,numT,n_iter,exp_id):
             )
 
         params = {
-                    'max_epochs': [15,20,25,30,35,40,50],
-                    'batch_size': [32,64,128],
+                 #   'max_epochs': [15,20,25,30,35,40,50],
+                    'batch_size': [32,64],
                     'optimizer__lr': expon(scale = 0.001),
                     'optimizer__weight_decay': expon(scale=0.001)
                  }
