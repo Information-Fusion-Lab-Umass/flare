@@ -99,18 +99,18 @@ class Model(nn.Module):
             x_cov_feat = x_cov_feat.view(B, T, -1)
  
         elif self.fusion == 'concat_input':
-            x_img_data = x_img_data.view(B, T ,-1) 
-            x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
-            x_img_data = x_img_data.view(B*T,-1)
+            x_img_data = x_img_data.view(B,T,-1)
+           # x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
+            x_img_data = torch.cat((x_long_data, x_cov_data), -1)
+            x_img_data = x_img_data.view(B*(T),-1)
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T, -1)
-
 
         # STEP 4: MULTI MODAL FEATURE FUSION -------------------------------
         # Fuse the features
         # x_feat: (B, T-1, F_i+F_l+F_c) = (B, T-1, F)
         if self.fusion == 'concat_feature':
-            x_feat = torch.cat((x_img_feat, x_long_feat, x_cov_feat), -1)
+            x_feat = torch.cat((x_img_feat,x_long_feat, x_cov_feat), -1)
             # print('Feat Max: ', np.max(x_feat.cpu().detach().numpy()))
             # print('Feat Min: ', np.min(x_feat.cpu().detach().numpy()))
         elif self.fusion == 'concat_input':

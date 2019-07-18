@@ -21,19 +21,19 @@ model:
     module__image:
         name: tadpole
         params:
-            num_input: 656
+            num_input: 663
             num_output: 1000
     module__temporal: 
         name: forecastRNN
         params:
-            num_input: 520
+            num_input: 500
             num_timesteps: *T 
     module__forecast:
         name: append_time
     module__task:
         name: dx
         params:
-            num_input: 520
+            num_input: 500
             num_classes: 3 
     module__fusion: concat_input
     module__aux_loss: MSE

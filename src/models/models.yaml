@@ -1,6 +1,7 @@
 # Image models
 tadpole: models.Tadpole
 tadpole_no_bn: models.Tadpole_No_BN    
+covtest: models.CovTest1
 
 # Multimodal models    
 multimodal: models.TadpoleFeat
@@ -16,6 +17,7 @@ lstm: models.LSTM
 rnn: models.RNN
 forecastRNN: models.forecastRNN
 forecastRNN_no_bn: models.forecastRNN_no_bn
+forecastRNN_covtest: models.forecastRNN_covtest
 
 # Forecasting models     
 append_time: models.AppendTime
@@ -24,4 +26,5 @@ multiply_time: models.MultiplyTime
 # Task specific models
 dx: models.ANN_DX
 dx1: models.ANN_DX_1
+dx2: models.ANN_DX_2 #for covtest only
 dx_no_bn: models.ANN_DX_no_bn

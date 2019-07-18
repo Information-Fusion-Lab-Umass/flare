@@ -10,26 +10,36 @@ from shutil import copyfile
 from time import time
 import pickle
 import numpy as np
-from src import datagen, utils, engine, evaluate
-#  os.environ['CUDA_VISIBLE_DEVICES']=''
+from src import datagen, utils, engine, evaluate, scoring
+from src import forecastNet
+import copy
+from skorch import NeuralNetClassifier
+from skorch.utils import noop
+from skorch.callbacks import EpochScoring, BatchScoring
+from sklearn.metrics import f1_score, roc_auc_score,make_scorer
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+import torch
+import torch.nn as nn
+from scipy.stats import expon
 
-def main(config_file):
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import ipdb
+
+def main(config_file,debug,numT,n_iter,exp_id):
     # Parser config file
     with open(config_file) as f:
-        config = yaml.load(f)
-    
-    config['train'].pop('num_iter')
-    # Create experiment output directories
-    exp_dir = os.path.join(config['output_dir'], config['exp_id'])
-    utils.create_dirs([config['output_dir'], exp_dir,
-            os.path.join(exp_dir, 'checkpoints'),
-            os.path.join(exp_dir, 'results'),
-            os.path.join(exp_dir, 'logs')])
+        config = yaml.load(f,Loader=yaml.FullLoader)
 
-    # Copy config file
-    copyfile(config_file, os.path.join(exp_dir, config['exp_id']+'.yaml'))
-    
-    # Load data and get image paths
+    main_exp_dir = os.path.join(config['output_dir'], exp_id)
+    if(not os.path.exists(main_exp_dir)):
+        os.mkdir(main_exp_dir)
+
+    max_T = config['datagen']['max_T'] # Load data and get image paths
+    num_classes = config['model']['module__task']['params']['num_classes'] 
+
+    model_config = copy.deepcopy(config['model'])
     t = time()
     path_load = config['data'].pop('path_load')
     if os.path.exists(path_load):
@@ -45,59 +55,133 @@ def main(config_file):
 
     # Datagens
     t = time()
-    datagen_train, datagen_val = \
+
+    # Catch dataset_size % batch_size == 1 issue with batchnorm 1d:
+
+    use_cuda = torch.cuda.is_available()
+    device = torch.device("cuda:0" if use_cuda else "cpu")
+
+    datagen_all, datasets_all, data_train_size = \
             datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
+
+    print('Dataset Length', datasets_all[0].__len__())
     class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
     print(class_wt)
 
-    # Define Classification model
-    model = engine.Engine(class_wt, config['model'])
+    # Define sklearn wrapper and scoring function
 
-    # Train the model
-    if config['train_model']:
-        print('Training the model ...')
-        model.train(datagen_train, datagen_val, exp_dir, **config['train'])
+    f1_scorer = make_scorer(scoring.f1_score, average = 'macro')
+    auc = EpochScoring(scoring='roc_auc', lower_is_better=False)
+    f1 = EpochScoring(scoring=f1_scorer,lower_is_better=False)
 
-    # Test the model
-    if config['test_model']:
-        print('Testing the model ...')
-        print('Train data : ')
-        model.test(datagen_train, exp_dir, 'train')
-        print('Val data : ')
-        model.test(datagen_val, exp_dir, 'val')
-        #  stats = model.test_stats(datagen_val)
+    clf_loss_train = BatchScoring(scoring.clf_loss_train, on_train=True, target_extractor=noop)
+    aux_loss_train = BatchScoring(scoring.aux_loss_train, on_train=True, target_extractor=noop)
 
-    #  with open('stats.pickle', 'wb') as f:
-        #  pickle.dump(stats, f)
+    clf_loss_valid = BatchScoring(scoring.clf_loss_valid, on_train=False, target_extractor=noop)
+    aux_loss_valid = BatchScoring(scoring.aux_loss_valid, on_train=False, target_extractor=noop)
 
-    return datagen_train, datagen_val
+    if(debug):
+        epochs = 1
+    else:
+        epochs = 60
+    net = forecastNet.forecastNet(
+            engine.Model, 
+            device = device,
+            callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
+            max_epochs = epochs,
+            batch_size = 64,
+            optimizer=torch.optim.Adam,
+            criterion=nn.CrossEntropyLoss,
+            optimizer__lr= .00120892,
+            optimizer__weight_decay= .00130934,
+            **model_config,
+            module__device=device,
+            module__class_wt=class_wt
+        )
+
+    X,Y = datasets_all[numT-1].return_all()
+    print('X length: ', X.__len__())
+    print('Y length: ', Y.__len__())
+    
+    net.fit(X,Y)
+
+    create_loss_graphs(net,main_exp_dir,debug,T=numT)
+
+def create_loss_graphs(net, main_exp_dir, debug, T):
+    clf_loss_train = net.history[:,'clf_loss_train']
+    aux_loss_train = net.history[:,'aux_loss_train']
+    total_loss_train = net.history[:,'train_loss'] 
+
+    clf_loss_valid = net.history[:,'clf_loss_valid']
+    aux_loss_valid = net.history[:,'aux_loss_valid']
+    total_loss_valid = net.history[:,'valid_loss'] 
+    epochs = [i for i in range(len(net.history))]
+
+    if(not debug):
+        txtstr = '\n'.join((
+            r'$\mathrm{lr}=%.8f$' % (net.optimizer__lr, ),
+            r'$\mathrm{wd}=%.8f$' % (net.optimizer__weight_decay, ),
+#            r'$\mathrm{epochs}=%d$' % (net.best_params_['max_epochs'], ),
+            r'$\mathrm{bsize}=%d$' % (net.batch_size, ),
+            r'$\mathrm{T}=%d$' % (T,), ))
+#            r'$\mathrm{f1}=%.8f$' % (net.best_score_,) ))
+
+    else:
+        txtstr = '\n'.join((
+            r'$\mathrm{lr}=%.8f$' % (net.optimizer__lr, ),
+            r'$\mathrm{wd}=%.8f$' % (net.optimizer__weight_decay, ),
+            r'$\mathrm{T}=%d$' % (T,) ))
+          #  r'$\mathrm{f1}=%.8f$' % (net.best_score_,) ))
+
+
+    # Set up bounding box parameters
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+
+    f = plt.figure()
+    axes = f.add_subplot(1,1,1)
+
+    plt.plot(epochs, total_loss_train, c='g', label = 'Train Loss')
+    plt.plot(epochs, total_loss_valid, c='r', label = 'Validation Loss')
+    plt.title('Train and Test Loss Curves')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+
+    # Place text box with best parameters
+    plt.text(0.85,0.70,txtstr, ha = 'center', va = 'center', transform=axes.transAxes, bbox=props)
+    plt.savefig(main_exp_dir + '/train_v_train.png', dpi = 300)
+    plt.close()
+
+    plt.figure()
+    plt.plot(epochs, clf_loss_train, c='g', label = 'Train Loss Clf')
+    plt.plot(epochs, aux_loss_train, c='b', label = 'Train Loss Aux')
+    plt.title('Train Loss Curves')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+    plt.savefig(main_exp_dir + '/train_loss.png', dpi = 300)
+    plt.close()
+
+
+    plt.figure()
+    plt.plot(epochs, clf_loss_valid, c='g', label = 'Valid Loss Clf')
+    plt.plot(epochs, aux_loss_valid, c='b', label = 'Valid Loss Aux')
+    plt.title('Validation Loss Curves')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.legend()
+    plt.savefig(main_exp_dir + '/valid_loss.png', dpi = 300)
+    plt.close()
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='../configs/config.yaml')
+    parser.add_argument('--debug', type=int, default=0)
+    parser.add_argument('--numT', type=int, default=1)
+    parser.add_argument('--n_iter', type=int, default=30)
+    parser.add_argument('--exp_id', type=str, default='debug')
     args = parser.parse_args()
-    dgt, dgv = main(args.config)
-    
-    #  with open('../data/datagen_val.pickle','wb') as f:
-    #      pickle.dump(dgv,f)
-    #
-    #  for i, datagen in enumerate(dgt):
-    #      num_traj = 0
-    #      minval = 100; maxval = 0
-    #      for k, (x, y) in enumerate(datagen):
-    #          num_traj += x['img_features'].size()[0]
-    #          traj_id = x['trajectory_id'].data.numpy()
-    #          minval = min(minval, np.min(traj_id))
-    #          maxval = max(maxval, np.max(traj_id))
-    #      print('T = {}, traj = {}, min = {}, max = {}'.\
-            #  format(i, num_traj, minval, maxval))
-
-            #  print(x.keys())
-            #  print('y : ', y)
-            #  print('tau : ', x['tau'])
-            #  print('pid : ', x['pid'])
-            #  print('traj_id : ', x['trajectory_id'])
-            #  print('flag_ad : ', x['flag_ad'])
-            #  print('first_occurance_ad : ', x['first_occurance_ad'])
+    main(args.config,args.debug,args.numT,args.n_iter,args.exp_id)
+   
 

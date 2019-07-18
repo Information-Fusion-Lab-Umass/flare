@@ -84,6 +84,31 @@ class ANN_DX_1(nn.Module):
 
         return x
 
+class ANN_DX_2(nn.Module):
+    def __init__(self, num_input, num_classes):
+        super(ANN_DX_2, self).__init__()
+        
+        self.fc1 = nn.Linear(num_input, 5)
+        self.bn1 = nn.BatchNorm1d(5)
+
+        self.fc2 = nn.Linear(5, 5)
+        self.bn2 = nn.BatchNorm1d(5)
+
+        self.fc3 = nn.Linear(5, num_classes)
+
+        self.dp1 = nn.Dropout(p=0.2)
+        self.dp2 = nn.Dropout(p=0.2)
+
+    def forward(self, x):
+        def layer(x, fc, dp, bn):
+            return dp(bn(F.relu(fc(x))))
+        
+        x = layer(x, self.fc1, self.dp1, self.bn1)
+        x = layer(x, self.fc2, self.dp2, self.bn2)
+        x = self.fc3(x)
+
+        return x
+
 class ANN_DX_no_bn(nn.Module):
     def __init__(self, num_input, num_classes):
         super(ANN_DX_no_bn, self).__init__()

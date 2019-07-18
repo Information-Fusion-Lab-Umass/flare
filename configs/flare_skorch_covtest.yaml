@@ -1,4 +1,4 @@
-output_dir: &output ../outputs/skorch-debug
+output_dir: &output ../outputs/skorch-debug/7.18.2019
 
 #Data
 data:
@@ -19,24 +19,25 @@ datagen:
 # Model 
 model:
     module__image:
-        name: tadpole
+        name: covtest
         params:
-            num_input: 656
-            num_output: 1000
+            num_input: 7
+            num_output: 7
     module__temporal: 
-        name: forecastRNN
+        name: forecastRNN_covtest
         params:
-            num_input: 520
+            num_input: 7
             num_timesteps: *T 
     module__forecast:
         name: append_time
     module__task:
-        name: dx
+        name: dx2
         params:
-            num_input: 520
+            num_input: 7
             num_classes: 3 
     module__fusion: concat_input
     module__aux_loss: MSE
-    module__aux_loss_scale: 10000
+    module__aux_loss_scale: 1000
     iterator_train__drop_last: True
     iterator_valid__drop_last: True
+
