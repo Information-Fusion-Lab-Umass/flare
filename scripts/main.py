@@ -14,6 +14,7 @@ from src import datagen, utils, engine, evaluate, scoring
 from src import forecastNet
 import copy
 from skorch import NeuralNetClassifier
+from skorch import helper
 from skorch.utils import noop
 from skorch.callbacks import EpochScoring, BatchScoring
 from sklearn.metrics import f1_score, roc_auc_score,make_scorer
@@ -42,35 +43,32 @@ def main(config_file,debug,numT,n_iter,exp_id):
     model_config = copy.deepcopy(config['model'])
     t = time()
     path_load = config['data'].pop('path_load')
+
     if os.path.exists(path_load):
         with open(path_load, 'rb') as f:
-            data = pickle.load(f)
+            src_data = pickle.load(f)
     else:
-        data = datagen.get_data(**config['data'])
+        src_data = datagen.get_data(**config['data'])
         with open(path_load, 'wb') as f:
-            pickle.dump(data, f)
+            pickle.dump(src_data, f)
+
     print('Data Loaded : ', time()-t)
     print('Basic Data Stats:')
-    print('Number of patients = ', len(data) - 2)
-
-    # Datagens
-    t = time()
-
-    # Catch dataset_size % batch_size == 1 issue with batchnorm 1d:
+    print('Number of patients = ', len(src_data))
 
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
 
-    datagen_all, datasets_all, data_train_size = \
-            datagen.get_datagen(data, **config['datagen'])
+    datasets_train, datasets_val, data_train_size = \
+            datagen.get_datagen(src_data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
 
-    print('Dataset Length', datasets_all[0].__len__())
-    class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
+    class_wt = utils.get_classWeights(src_data, config['data']['train_ids_path'])
     print(class_wt)
 
-    # Define sklearn wrapper and scoring function
+    dataset_val = helper.predefined_split(datasets_val[numT-1])
 
+    # Define sklearn wrapper and scoring function
     f1_scorer = make_scorer(scoring.f1_score, average = 'macro')
     auc = EpochScoring(scoring='roc_auc', lower_is_better=False)
     f1 = EpochScoring(scoring=f1_scorer,lower_is_better=False)
@@ -91,22 +89,24 @@ def main(config_file,debug,numT,n_iter,exp_id):
             callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
             max_epochs = epochs,
             batch_size = 64,
+            train_split = dataset_val,
             optimizer=torch.optim.Adam,
             criterion=nn.CrossEntropyLoss,
-            optimizer__lr= .00120892,
-            optimizer__weight_decay= .00130934,
+            optimizer__lr= .00015595,
+            optimizer__weight_decay= .00014842,
             **model_config,
             module__device=device,
             module__class_wt=class_wt
         )
 
-    X,Y = datasets_all[numT-1].return_all()
-    print('X length: ', X.__len__())
-    print('Y length: ', Y.__len__())
+#    X,Y = datasets_all[numT-1].return_all()
+#    print('X length: ', X.__len__())
+#    print('Y length: ', Y.__len__())
     
-    net.fit(X,Y)
+    net.fit(datasets_train[numT-1], y=None)
 
     create_loss_graphs(net,main_exp_dir,debug,T=numT)
+
 
 def create_loss_graphs(net, main_exp_dir, debug, T):
     clf_loss_train = net.history[:,'clf_loss_train']

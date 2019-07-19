@@ -15,6 +15,7 @@ cov_no_bn: models.Covariate_no_bn
 # Temporal models     
 lstm: models.LSTM
 rnn: models.RNN
+rnn_ct: models.RNN_ct
 forecastRNN: models.forecastRNN
 forecastRNN_no_bn: models.forecastRNN_no_bn
 forecastRNN_covtest: models.forecastRNN_covtest

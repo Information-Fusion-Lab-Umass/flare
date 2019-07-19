@@ -97,7 +97,8 @@ class ANN_DX_2(nn.Module):
         self.fc3 = nn.Linear(5, num_classes)
 
         self.dp1 = nn.Dropout(p=0.2)
-        self.dp2 = nn.Dropout(p=0.2)
+       # self.dp2 = nn.Dropout(p=0.2)
+        self.dp2 = nn.Dropout(p=0.5)
 
     def forward(self, x):
         def layer(x, fc, dp, bn):

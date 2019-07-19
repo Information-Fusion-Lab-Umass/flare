@@ -10,7 +10,6 @@ data:
     only_consecutive: True
     data_split: &data_split 0.8
 
-
 datagen:
     max_visits: &T 5
     max_T : 5
@@ -25,7 +24,7 @@ model:
             num_input: 7
             num_output: 7
     module__temporal: 
-        name: forecastRNN_covtest
+        name: rnn_ct
         params:
             num_input: 7
             num_timesteps: *T 
@@ -34,7 +33,7 @@ model:
     module__task:
         name: dx2
         params:
-            num_input: 7
+            num_input: 12
             num_classes: 3 
     module__fusion: concat_input
     module__aux_loss: MSE

@@ -154,7 +154,7 @@ class forecastRNN_covtest(nn.Module):
 
                 nn.Linear(250, 250),
                 nn.BatchNorm1d(250),
-                nn.Dropout(p=0.2),
+                nn.Dropout(p=0.5),
                 nn.ReLU(),
 
                 nn.Linear(250, num_input),
@@ -238,4 +238,21 @@ class LSTM(nn.Module):
         if self.T==1:
             return x[:, 0, :] 
         x = self.lstm(x)[0]
+        return x[:, -1, :]
+
+class RNN_ct(nn.Module):
+    def __init__(self, device, num_input, num_timesteps):
+        super(RNN_ct, self).__init__()
+        self.T = 1 if num_timesteps==0 else num_timesteps
+        self.rnn = nn.RNN(input_size = num_input,
+                hidden_size = num_input, 
+                num_layers = 2,
+                batch_first=True,
+                dropout=0.2, 
+                bidirectional=False)
+        
+    def forward(self, x): 
+        if self.T==1:
+            return x[:, 0, :] 
+        x = self.rnn(x)[0]
         return x[:, -1, :]

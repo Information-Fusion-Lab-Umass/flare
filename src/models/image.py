@@ -64,7 +64,7 @@ class CovTest1(nn.Module):
         super(CovTest1, self).__init__()
         self.aff1 = nn.Linear(num_input, num_input)
         self.bn1 = nn.BatchNorm1d(num_input)
-        self.dp1 = nn.Dropout(0.2)
+        self.dp1 = nn.Dropout(0.5)
         self.aff2 = nn.Linear(num_input, num_output)
 
     def forward(self, x):

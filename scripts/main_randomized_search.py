@@ -17,7 +17,7 @@ from skorch import NeuralNetClassifier
 from skorch.utils import noop
 from skorch.callbacks import EpochScoring, BatchScoring
 from sklearn.metrics import f1_score, roc_auc_score,make_scorer
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, PredefinedSplit
 import torch
 import torch.nn as nn
 from scipy.stats import expon
@@ -42,16 +42,23 @@ def main(config_file,debug,numT,n_iter,exp_id):
     model_config = copy.deepcopy(config['model'])
     t = time()
     path_load = config['data'].pop('path_load')
+
     if os.path.exists(path_load):
         with open(path_load, 'rb') as f:
-            data = pickle.load(f)
+            src_data = pickle.load(f)
     else:
-        data = datagen.get_data(**config['data'])
+        src_data = datagen.get_data(**config['data'])
         with open(path_load, 'wb') as f:
-            pickle.dump(data, f)
+            pickle.dump(src_data, f)
+
+    data_train = {key : src_data[key] \
+            for key in src_data['train_ids'] if key in src_data}
+    data_val = {key : src_data[key] \
+            for key in src_data['test_ids'] if key in src_data}
+
     print('Data Loaded : ', time()-t)
     print('Basic Data Stats:')
-    print('Number of patients = ', len(data) - 2)
+    print('Number of patients = ', len(src_data))
 
     # Datagens
     t = time()
@@ -61,13 +68,15 @@ def main(config_file,debug,numT,n_iter,exp_id):
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
 
-    datagen_all, datasets_all, data_train_size = \
-            datagen.get_datagen(data, **config['datagen'])
+    datasets_train, datasets_val, data_train_size = \
+            datagen.get_datagen(src_data, **config['datagen'])
+
     print('Datagens Loaded : ', time()-t)
 
-    print('Dataset Length', datasets_all[0].__len__())
-    class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
+    class_wt = utils.get_classWeights(src_data, config['data']['train_ids_path'])
     print(class_wt)
+
+    dataset_val = PredefinedSplit(datasets_val[numT-1])
 
     # Define sklearn wrapper and scoring function
 
@@ -119,14 +128,10 @@ def main(config_file,debug,numT,n_iter,exp_id):
                     'optimizer__weight_decay': expon(scale=0.001)
                  }
 
-    X,Y = datasets_all[numT-1].return_all()
-    print('X length: ', X.__len__())
-    print('Y length: ', Y.__len__())
-    
-    search = RandomizedSearchCV(net, params, refit=True, cv=3, scoring=f1_scorer, verbose=1, n_iter=n_iter)
+    search = RandomizedSearchCV(net, params, refit=True, cv=dataset_val, scoring=f1_scorer, verbose=1, n_iter=n_iter)
 
     print('Search!')
-    search.fit(X,Y)
+    search.fit(datasets_train[numT-1],y=None)
 
     print(search.best_score_, search.best_params_)
     create_loss_graphs(search,main_exp_dir,debug,T=numT)
