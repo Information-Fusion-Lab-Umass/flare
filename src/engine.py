@@ -73,7 +73,7 @@ class Model(nn.Module):
         x_time_data = data_batch['tau']
         x_labels = data_batch['labels']
         (B, T, _) = x_img_data.shape
-       
+        
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
         x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
@@ -101,7 +101,8 @@ class Model(nn.Module):
  
         elif self.fusion == 'concat_input':
             x_img_data = x_img_data.view(B, T ,-1) 
-            x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
+            x_img_data = torch.cat((x_long_data, x_cov_data), -1)
+            #x_img_data = torch.cat((x_img_data, x_long_data, x_cov_data), -1)
             x_img_data = x_img_data.view(B*T,-1)
             x_img_feat = self.model_image(x_img_data)
             x_img_feat = x_img_feat.view(B, T, -1)
@@ -119,7 +120,7 @@ class Model(nn.Module):
 
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        if self.model_temporal_name == 'forecastRNN':
+        if self.model_temporal_name == 'forecastRNN' or self.model_temporal_name == 'forecastRNN_covtest':
             x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
 
         else:
@@ -135,7 +136,7 @@ class Model(nn.Module):
         ypred = self.model_task(x_forecast)
         
         # STEP 8: Compute Auxiliary Loss
-        if self.model_temporal_name == 'forecastRNN' and self.aux_loss == "cross_entropy":
+        if (self.model_temporal_name == 'forecastRNN' or self.model_temporal_name == 'forecastRNN_covtest') and self.aux_loss == "cross_entropy":
             lossval = torch.tensor(0.).to(self.device)
             if T != 2:
                 for i in range(T-1):
@@ -215,11 +216,13 @@ class Engine:
             T_subset = (len(datagen_train) == 1)
             
             for idx, datagen in enumerate(datagen_train):
+                #if epoch < 20 and idx < 1:
+                #    continue
+                print("datagen idx: " + str(idx))
                 t = time()
                 clfLoss_T = 0.0; auxLoss_T = 0.0
                 for step, (x,y) in enumerate(datagen):
                     self.optm.zero_grad()
-
                     x = {k : v.to(self.device) for k, v in x.items()}
                     y = y.to(self.device)
                     y_pred, auxloss = self.model(x)
@@ -248,7 +251,7 @@ class Engine:
                 
                 loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
                 print('auxLoss_T: ', auxLoss_T)
-                    
+   
             loss_vals.update('train', epoch)
 
             # Unittest
@@ -331,7 +334,6 @@ class Engine:
                     y_pred = torch.cat((y_pred, y_pred_batch), 0)
                     y = torch.cat((y, y_batch), 0)
                     tau = torch.cat((tau, x_batch['tau']), 0)
-
             tau = tau.cpu().data.numpy()
             for t in range(numT - idx):
                 loc = np.where(tau == t + 1)
