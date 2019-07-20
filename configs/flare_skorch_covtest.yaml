@@ -1,4 +1,4 @@
-output_dir: &output ../outputs/skorch-debug/7.19.2019
+output_dir: &output ../outputs/skorch/7.20.2019
 
 #Data
 data:

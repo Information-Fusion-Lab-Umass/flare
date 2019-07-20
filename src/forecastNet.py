@@ -9,7 +9,7 @@ import ipdb
 class forecastNet(NeuralNetClassifier):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
+    
     def train_step_single(self, Xi, yi, **fit_params):
         self.module_.train()        
         self.optimizer_.zero_grad()

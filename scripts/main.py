@@ -22,6 +22,7 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 import torch
 import torch.nn as nn
 from scipy.stats import expon
+import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -30,6 +31,7 @@ import ipdb
 
 def main(config_file,debug,numT,n_iter,exp_id):
     # Parser config file
+    random.seed(9001)
     with open(config_file) as f:
         config = yaml.load(f,Loader=yaml.FullLoader)
 
@@ -80,24 +82,25 @@ def main(config_file,debug,numT,n_iter,exp_id):
     aux_loss_valid = BatchScoring(scoring.aux_loss_valid, on_train=False, target_extractor=noop)
 
     if(debug):
-        epochs = 1
+        epochs = 2
     else:
-        epochs = 60
+        epochs = 120
     net = forecastNet.forecastNet(
             engine.Model, 
             device = device,
             callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
             max_epochs = epochs,
-            batch_size = 64,
+            batch_size = 128,
             train_split = dataset_val,
             optimizer=torch.optim.Adam,
             criterion=nn.CrossEntropyLoss,
-            optimizer__lr= .00015595,
-            optimizer__weight_decay= .00014842,
+            optimizer__lr= .00100496,
+            optimizer__weight_decay= .00333107,
             **model_config,
             module__device=device,
             module__class_wt=class_wt
         )
+
 
 #    X,Y = datasets_all[numT-1].return_all()
 #    print('X length: ', X.__len__())
@@ -107,7 +110,6 @@ def main(config_file,debug,numT,n_iter,exp_id):
 
     create_loss_graphs(net,main_exp_dir,debug,T=numT)
 
-
 def create_loss_graphs(net, main_exp_dir, debug, T):
     clf_loss_train = net.history[:,'clf_loss_train']
     aux_loss_train = net.history[:,'aux_loss_train']
@@ -116,6 +118,7 @@ def create_loss_graphs(net, main_exp_dir, debug, T):
     clf_loss_valid = net.history[:,'clf_loss_valid']
     aux_loss_valid = net.history[:,'aux_loss_valid']
     total_loss_valid = net.history[:,'valid_loss'] 
+
     epochs = [i for i in range(len(net.history))]
 
     if(not debug):
@@ -124,15 +127,15 @@ def create_loss_graphs(net, main_exp_dir, debug, T):
             r'$\mathrm{wd}=%.8f$' % (net.optimizer__weight_decay, ),
 #            r'$\mathrm{epochs}=%d$' % (net.best_params_['max_epochs'], ),
             r'$\mathrm{bsize}=%d$' % (net.batch_size, ),
-            r'$\mathrm{T}=%d$' % (T,), ))
-#            r'$\mathrm{f1}=%.8f$' % (net.best_score_,) ))
+            r'$\mathrm{T}=%d$' % (T,),
+            r'$\mathrm{f1}=%.8f$' % (net.history[:,'f1_score'][-1],) ))
 
     else:
         txtstr = '\n'.join((
             r'$\mathrm{lr}=%.8f$' % (net.optimizer__lr, ),
             r'$\mathrm{wd}=%.8f$' % (net.optimizer__weight_decay, ),
-            r'$\mathrm{T}=%d$' % (T,) ))
-          #  r'$\mathrm{f1}=%.8f$' % (net.best_score_,) ))
+            r'$\mathrm{T}=%d$' % (T,), 
+            r'$\mathrm{f1}=%.8f$' % (net.history[:,'f1_score'][-1],) ))
 
 
     # Set up bounding box parameters

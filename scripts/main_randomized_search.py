@@ -75,8 +75,20 @@ def main(config_file,debug,numT,n_iter,exp_id):
 
     class_wt = utils.get_classWeights(src_data, config['data']['train_ids_path'])
     print(class_wt)
+    
+    X_t, y_t = datasets_train[numT-1].return_all()
+    X_v, y_v = datasets_val[numT-1].return_all()
 
-    dataset_val = PredefinedSplit(datasets_val[numT-1])
+    X = np.concatenate((X_t, X_v))
+    y = np.concatenate((y_t, y_v))
+    
+    train_idx = datasets_train[numT-1].__len__()
+    val_idx = datasets_val[numT-1].__len__()
+
+    split = np.zeros(train_idx + val_idx)
+    split[:train_idx] = 1
+    split[val_idx:] = -1
+    pd_split = PredefinedSplit(split)
 
     # Define sklearn wrapper and scoring function
 
@@ -124,14 +136,14 @@ def main(config_file,debug,numT,n_iter,exp_id):
         params = {
                  #   'max_epochs': [15,20,25,30,35,40,50],
                     'batch_size': [32,64,128],
-                    'optimizer__lr': expon(scale = 0.001),
-                    'optimizer__weight_decay': expon(scale=0.001)
+                    'optimizer__lr': expon(scale = 0.01),
+                    'optimizer__weight_decay': expon(scale=0.01)
                  }
 
-    search = RandomizedSearchCV(net, params, refit=True, cv=dataset_val, scoring=f1_scorer, verbose=1, n_iter=n_iter)
+    search = RandomizedSearchCV(net, params, refit=True, cv=pd_split, scoring=f1_scorer, verbose=1, n_iter=n_iter)
 
     print('Search!')
-    search.fit(datasets_train[numT-1],y=None)
+    search.fit(X,y)
 
     print(search.best_score_, search.best_params_)
     create_loss_graphs(search,main_exp_dir,debug,T=numT)
@@ -178,7 +190,7 @@ def create_loss_graphs(search, main_exp_dir, debug, T):
 
     # Place text box with best parameters
     plt.text(0.85,0.70,txtstr, ha = 'center', va = 'center', transform=axes.transAxes, bbox=props)
-    plt.savefig(main_exp_dir + '/train_v_train.png', dpi = 300)
+    plt.savefig(main_exp_dir + '/train_v_val.png', dpi = 300)
     plt.close()
 
     plt.figure()

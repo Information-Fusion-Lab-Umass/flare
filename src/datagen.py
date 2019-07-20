@@ -7,6 +7,7 @@ import skorch
 from torch.utils import data
 from tqdm import tqdm
 import sys
+import ipdb
 
 from src import patient
 
@@ -53,8 +54,8 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     data_train_size = 0
 
     # Get raw data generators
-    datasets_all = []
-    datagen_all = []
+#    datasets_all = []
+#    datagen_all = []
 
    # for T in range(2, max_visits + 1):
    #     dataset = Dataset(src_data, T, max_T)
@@ -93,7 +94,10 @@ class Dataset(data.Dataset):
         # and whose first visit isn't AD already 
         filt_traj = lambda x: [traj for traj in x \
                             if max(list(traj.visits.keys())) < max_T and \
-                            traj.visits[list(traj.visits.keys())[0]].data['labels'][0] != 2]
+                            2 not in traj.visits[list(traj.visits.keys())[0]].data['labels'][:T]]
+
+   #     filt_traj = lambda x: [traj for traj in x \
+   #                         if max(list(traj.visits.keys())) < max_T]
         self.trajectories = [filt_traj(self.data[pid].trajectories[T]) \
                 for pid in self.data \
                 if T in self.data[pid].trajectories]     
@@ -147,4 +151,6 @@ class Dataset(data.Dataset):
 
         print(np.asarray(X).shape, torch.LongTensor(Y).shape)
         return np.asarray(X),torch.LongTensor(Y)
+
+
 
