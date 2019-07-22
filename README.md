@@ -1,9 +1,13 @@
-## FLARe : Feature Learning using Anticipated Representations
+# FLARe: Forecasting by Learning Anticipated Representations
+<center> Yeahuay Joie Wu*, Surya Teja Devarakonda*, Madalina Fiterau </center>
+<center><italics>University of Massachusetts, Amherst</italics></center>
 
-### Introduction
-FLARe is a novel approach for disease trajectory forecasting using multimodal 
-longitudinal data. Our academic paper which describes FLARe in detail and 
-provides comprehensive results can be found here : **ADD PATH TO THE ARXIV PAPER HERE.** 
+#### Machine Learning for Healthcare Conference (MLHC) 2019
+
+## Abstract
+Computational models that forecast the progression of Alzheimer's disease at the patient level are extremely useful tools for identifying high risk cohorts for early intervention and treatment planning. The state-of-the-art work in this area proposes models that forecast by using latent representations extracted from the longitudinal data across multiple modalities, including volumetric information extracted from medical scans and demographic info. These models incorporate the time horizon, which is the amount of time between the last recorded visit and the future visit, by directly concatenating a representation of it to the data latent representation. In this paper, we present a model (FLARe) which generates a sequence of latent representations of the patient status across the time horizon, providing more informative modeling of the temporal relationships between the patient's history and future visits. Our proposed model outperforms the baseline in terms of forecasting accuracy and F1 score with the added benefit of robustly handling missing visits. 
+
+Our academic paper which describes FLARe in detail and provides comprehensive results can be found [here](https://arxiv.org/abs/1904.08930).
 
 ### Data
 We used data from the [TADPOLE challenge](https://tadpole.grand-challenge.org/Data/#Data). Specifically, we used the **TADPOLE_D1_D2.csv** file. Download 
@@ -76,7 +80,9 @@ The results are stored in the directory *outputs/<exp_id>/results/*.
 
 We uploaded the experiment folder **flare_pretrained/** with the best results [here](https://www.dropbox.com/sh/vgrj13a1f0cmmcx/AADm4aHGMbLK7bCc29dsoVqma?dl=0). The model 
 can be initialized with these pretrained weights by setting  
+```
 model.load_model: '../outputs/flare_pretrained/checkpoints/model.pth'  
+```
 in the config file. 
 
 
