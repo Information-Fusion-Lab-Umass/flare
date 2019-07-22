@@ -85,4 +85,16 @@ model.load_model: '../outputs/flare_pretrained/checkpoints/model.pth'
 ```
 in the config file. 
 
+### Citation
+If you find this work or dataset useful, please consider citing:
+```
+@article{wu2019flare,
+  title={FLARe: Forecasting by Learning Anticipated Representations},
+  author={Wu, Yeahuay Joie and Devarakonda, Surya Teja and Fiterau, Madalina},
+  journal={arXiv preprint arXiv:1904.08930},
+  year={2019}
+}
+```
 
+*Authors Contributed Equally
+![Hits](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https://github.com/Information-Fusion-Lab-Umass/flare/tree/legacy)
