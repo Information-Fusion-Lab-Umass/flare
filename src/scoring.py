@@ -7,7 +7,8 @@ Some modified scoring functions in order to make skorch compatible with some qui
 '''
 
 def f1_score(y_true, y_pred, labels=None, pos_label=1, average='binary',sample_weight=None):
-    y_true = y_true[:len(y_pred)]
+    if(y_true.shape != y_pred.shape):
+        y_true = y_true[:len(y_pred)]
     return fbeta_score(y_true, y_pred, 1, labels=labels,
                        pos_label=pos_label, average=average,
                        sample_weight=sample_weight)

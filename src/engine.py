@@ -72,11 +72,18 @@ class Model(nn.Module):
         x_long_data = test_scores
         x_time_data = tau
         x_labels = labels
-        (B, T, _) = x_img_data.shape
+        if len(x_img_data.shape) == 2:
+            B = 1
+            T = x_img_data.shape[0]
+        else:
+            (B, T, _) = x_img_data.shape
        
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
-        x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
+        if(len(x_img_data.shape) == 2):
+            x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[1:])
+        else:
+            x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         if self.fusion == 'concat_feature':

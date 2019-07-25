@@ -83,7 +83,7 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
         datasets_val.append(dataset)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
         datagen_val.append(dataloader)
-    return datasets_train, datasets_val, data_train_size
+    return datasets_train, datasets_val, datagen_train, datagen_val, data_train_size
 
 class Dataset(data.Dataset):
     def __init__(self, data, T, max_T):
