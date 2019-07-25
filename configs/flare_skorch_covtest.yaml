@@ -10,7 +10,6 @@ data:
     only_consecutive: True
     data_split: &data_split 0.8
 
-
 datagen:
     max_visits: &T 5
     max_T : 5

@@ -14,15 +14,13 @@ from src import datagen, utils, engine, evaluate, scoring
 from src import forecastNet
 import copy
 from skorch import NeuralNetClassifier
-from skorch import helper
 from skorch.utils import noop
 from skorch.callbacks import EpochScoring, BatchScoring
 from sklearn.metrics import f1_score, roc_auc_score,make_scorer
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, PredefinedSplit
 import torch
 import torch.nn as nn
 from scipy.stats import expon
-import random
 
 import matplotlib
 matplotlib.use('Agg')
@@ -53,23 +51,47 @@ def main(config_file,debug,numT,n_iter,exp_id):
         with open(path_load, 'wb') as f:
             pickle.dump(src_data, f)
 
+    data_train = {key : src_data[key] \
+            for key in src_data['train_ids'] if key in src_data}
+    data_val = {key : src_data[key] \
+            for key in src_data['test_ids'] if key in src_data}
+
     print('Data Loaded : ', time()-t)
     print('Basic Data Stats:')
     print('Number of patients = ', len(src_data))
 
+    # Datagens
+    t = time()
+
+    # Catch dataset_size % batch_size == 1 issue with batchnorm 1d:
+
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda:0" if use_cuda else "cpu")
 
-    datasets_train, datasets_val, datagen_train, datagen_val, data_train_size = \
+    datasets_train, datasets_val, data_train_size = \
             datagen.get_datagen(src_data, **config['datagen'])
+
     print('Datagens Loaded : ', time()-t)
 
     class_wt = utils.get_classWeights(src_data, config['data']['train_ids_path'])
     print(class_wt)
+    
+    X_t, y_t = datasets_train[numT-1].return_all()
+    X_v, y_v = datasets_val[numT-1].return_all()
 
-    dataset_val = helper.predefined_split(datasets_val[-1])
+    X = np.concatenate((X_t, X_v))
+    y = np.concatenate((y_t, y_v))
+    
+    train_idx = datasets_train[numT-1].__len__()
+    val_idx = datasets_val[numT-1].__len__()
+
+    split = np.zeros(train_idx + val_idx)
+    split[:train_idx] = 1
+    split[val_idx:] = -1
+    pd_split = PredefinedSplit(split)
 
     # Define sklearn wrapper and scoring function
+
     f1_scorer = make_scorer(scoring.f1_score, average = 'macro')
     auc = EpochScoring(scoring='roc_auc', lower_is_better=False)
     f1 = EpochScoring(scoring=f1_scorer,lower_is_better=False)
@@ -81,62 +103,76 @@ def main(config_file,debug,numT,n_iter,exp_id):
     aux_loss_valid = BatchScoring(scoring.aux_loss_valid, on_train=False, target_extractor=noop)
 
     if(debug):
-        epochs = 1
+        net = forecastNet.forecastNet(
+                engine.Model, 
+                max_epochs=2,
+                batch_size=128,
+                device = device,
+                callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
+                optimizer=torch.optim.Adam,
+                criterion=nn.CrossEntropyLoss,
+                **model_config,
+                module__device=device,
+                module__class_wt=class_wt
+            )
+
+        params = {
+                    'optimizer__lr': expon(scale = 0.01),
+                    'optimizer__weight_decay': expon(scale=0.01)
+                 }
     else:
-        epochs = 60
-    net = forecastNet.forecastNet(
-            engine.Model, 
-            device = device,
-            callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
-            max_epochs = epochs,
-            batch_size = 128,
-            train_split = datasets_val[-1],
-            optimizer=torch.optim.Adam,
-            criterion=nn.CrossEntropyLoss,
-            optimizer__lr= .00100496,
-            optimizer__weight_decay= .00333107,
-            **model_config,
-            module__device=device,
-            module__class_wt=class_wt
-        )
+        net = forecastNet.forecastNet(
+                engine.Model, 
+                device = device,
+                callbacks = [f1, clf_loss_train, aux_loss_train, clf_loss_valid, aux_loss_valid],
+                max_epochs = 50,
+                optimizer=torch.optim.Adam,
+                criterion=nn.CrossEntropyLoss,
+                **model_config,
+                module__device=device,
+                module__class_wt=class_wt
+            )
 
-#    X,Y = datasets_all[numT-1].return_all()
-#    print('X length: ', X.__len__())
-#    print('Y length: ', Y.__len__())
+        params = {
+                 #   'max_epochs': [15,20,25,30,35,40,50],
+                    'batch_size': [32,64,128],
+                    'optimizer__lr': expon(scale = 0.01),
+                    'optimizer__weight_decay': expon(scale=0.01)
+                 }
 
-    fit_params =  {'datagens_train': datagen_train, 'datagens_val': datagen_val}
+    search = RandomizedSearchCV(net, params, refit=True, cv=pd_split, scoring=f1_scorer, verbose=1, n_iter=n_iter)
 
-    net.fit(datasets_train[-1], y=None, **fit_params)
-    #f1_scorer(net, datasets_val, y_true=None)
+    print('Search!')
+    search.fit(X,y)
 
-    create_loss_graphs(net,main_exp_dir,debug,T=numT)
+    print(search.best_score_, search.best_params_)
+    create_loss_graphs(search,main_exp_dir,debug,T=numT)
 
-def create_loss_graphs(net, main_exp_dir, debug, T):
-    clf_loss_train = net.history[:,'clf_loss_train']
-    aux_loss_train = net.history[:,'aux_loss_train']
-    total_loss_train = net.history[:,'train_loss'] 
+def create_loss_graphs(search, main_exp_dir, debug, T):
+    clf_loss_train = search.best_estimator_.history[:,'clf_loss_train']
+    aux_loss_train = search.best_estimator_.history[:,'aux_loss_train']
+    total_loss_train = search.best_estimator_.history[:,'train_loss'] 
 
-    clf_loss_valid = net.history[:,'clf_loss_valid']
-    aux_loss_valid = net.history[:,'aux_loss_valid']
-    total_loss_valid = net.history[:,'valid_loss'] 
-
-    epochs = [i for i in range(len(net.history))]
+    clf_loss_valid = search.best_estimator_.history[:,'clf_loss_valid']
+    aux_loss_valid = search.best_estimator_.history[:,'aux_loss_valid']
+    total_loss_valid = search.best_estimator_.history[:,'valid_loss'] 
+    epochs = [i for i in range(len(search.best_estimator_.history))]
 
     if(not debug):
         txtstr = '\n'.join((
-            r'$\mathrm{lr}=%.8f$' % (net.optimizer__lr, ),
-            r'$\mathrm{wd}=%.8f$' % (net.optimizer__weight_decay, ),
-#            r'$\mathrm{epochs}=%d$' % (net.best_params_['max_epochs'], ),
-            r'$\mathrm{bsize}=%d$' % (net.batch_size, ),
+            r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
+            r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
+#            r'$\mathrm{epochs}=%d$' % (search.best_params_['max_epochs'], ),
+            r'$\mathrm{bsize}=%d$' % (search.best_params_['batch_size'], ),
             r'$\mathrm{T}=%d$' % (T,),
-            r'$\mathrm{f1}=%.8f$' % (net.history[:,'f1_score'][-1],) ))
+            r'$\mathrm{f1}=%.8f$' % (search.best_score_,) ))
 
     else:
         txtstr = '\n'.join((
-            r'$\mathrm{lr}=%.8f$' % (net.optimizer__lr, ),
-            r'$\mathrm{wd}=%.8f$' % (net.optimizer__weight_decay, ),
-            r'$\mathrm{T}=%d$' % (T,), 
-            r'$\mathrm{f1}=%.8f$' % (net.history[:,'f1_score'][-1],) ))
+            r'$\mathrm{lr}=%.8f$' % (search.best_params_['optimizer__lr'], ),
+            r'$\mathrm{wd}=%.8f$' % (search.best_params_['optimizer__weight_decay'], ),
+            r'$\mathrm{T}=%d$' % (T,),
+            r'$\mathrm{f1}=%.8f$' % (search.best_score_,) ))
 
 
     # Set up bounding box parameters
@@ -154,7 +190,7 @@ def create_loss_graphs(net, main_exp_dir, debug, T):
 
     # Place text box with best parameters
     plt.text(0.85,0.70,txtstr, ha = 'center', va = 'center', transform=axes.transAxes, bbox=props)
-    plt.savefig(main_exp_dir + '/train_v_train.png', dpi = 300)
+    plt.savefig(main_exp_dir + '/train_v_val.png', dpi = 300)
     plt.close()
 
     plt.figure()

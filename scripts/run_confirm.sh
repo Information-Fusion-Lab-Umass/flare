@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=T3
+#SBATCH --job-name=baseline_all
 #SBATCH -o misc/run_outputs/%j.txt            # output file
 #SBATCH -e misc/errors/%j.err            # File to which STDERR will be written
 #SBATCH --ntasks=1
@@ -8,6 +8,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --time=4-00:00:00          # HH:MM:SS
 
-python3 main.py --config=../configs/flare_skorch_covtest.yaml --debug=0 --numT=3 --n_iter=40 --exp_id=T3_flare_noincAD_3
+python3 main.py --config=../configs/flare_skorch_covtest_baseline.yaml --debug=0 --numT=4 --n_iter=40 --exp_id=baseline_all
 sleep 
 exit
