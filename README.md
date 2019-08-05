@@ -1,6 +1,7 @@
 # FLARe: Forecasting by Learning Anticipated Representations
 <center> Surya Teja Devarakonda*, Yeahuay Joie Wu*, Madalina Fiterau </center>
 <center><italics>University of Massachusetts, Amherst</italics></center>
+*Authors Contributed Equally
 
 #### Machine Learning for Healthcare Conference (MLHC) 2019
 
@@ -116,5 +117,4 @@ If you find this work or dataset useful, please consider citing:
 }
 ```
 
-*Authors Contributed Equally
 ![Hits](https://hitcounter.pythonanywhere.com/count/tag.svg?url=https://github.com/Information-Fusion-Lab-Umass/flare/tree/legacy)
