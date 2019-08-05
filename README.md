@@ -1,5 +1,5 @@
 # FLARe: Forecasting by Learning Anticipated Representations
-<center> Yeahuay Joie Wu*, Surya Teja Devarakonda*, Madalina Fiterau </center>
+<center> *Surya Teja Devarakonda*, *Yeahuay Joie Wu*, Madalina Fiterau </center>
 <center><italics>University of Massachusetts, Amherst</italics></center>
 
 #### Machine Learning for Healthcare Conference (MLHC) 2019
@@ -8,6 +8,23 @@
 Computational models that forecast the progression of Alzheimer's disease at the patient level are extremely useful tools for identifying high risk cohorts for early intervention and treatment planning. The state-of-the-art work in this area proposes models that forecast by using latent representations extracted from the longitudinal data across multiple modalities, including volumetric information extracted from medical scans and demographic info. These models incorporate the time horizon, which is the amount of time between the last recorded visit and the future visit, by directly concatenating a representation of it to the data latent representation. In this paper, we present a model (FLARe) which generates a sequence of latent representations of the patient status across the time horizon, providing more informative modeling of the temporal relationships between the patient's history and future visits. Our proposed model outperforms the baseline in terms of forecasting accuracy and F1 score with the added benefit of robustly handling missing visits. 
 
 Our academic paper which describes FLARe in detail and provides comprehensive results can be found [here](https://arxiv.org/abs/1904.08930).
+
+## Model Description
+The objective of FLARe is to predict what the disease stage of the patient could be at a future time point, given his/her medical history data, including MRI scans, cognitive assessments and demographics. The model pipeline is as follows:  
+1. **Feature Extraction**: First, we use three seperate multilayer perceptrons (MLPs), one for each category of input features, to encode our input features into a common latent space. We use the manually extracted features for the MRI images, which are provided in the TADPOLE challenge, as inputs for one MLP. We use 4 cognitive scores and 3 demographic values (age, gender and presence of APOE4 gene) as inputs for the other two MLPs. After we extract the representations, we concatenate them. 
+2. **Feature Prediction**: We do this for all the available timepoints in the patient's medical history. Then, the sequence of concatenated features is sent to an RNN which provides hidden layer outputs for features of each time point. These hidden layer outputs are fed to another MLP, which performs feature prediction, i.e., it predicts the feature vector of the next time point given the RNN hidden layer output of the present time point. We introduce an auxiliary error loss (typically the mean squared error loss) to optimize this MLP. We continue iteratively generating the sequence of representations for the datapoints between our last available visit and the future visit we want to forecast.  
+On the other hand, in our baseline model, which we constructed taking ideas from the state-of-the-art models, we just take the final hidden layer output of the RNN and concatenate a representation of the time difference between the final available time point and the future desired time point. We hypothesize that our approach will be more robust and natural compared to the baseline model.  
+3. **Classification**: Finally, we feed the output of the feature prediction module to a MLP classifier, which performs a 3-class classification between the classes Cognitively Normal (CN), Mildly Cognitively Impaired (MCI), and Alzheimer’s Disease (AD).
+
+Baseline model (RNN-Concat):  
+![baseline](https://www.dropbox.com/s/noc0v68v6g48ti0/flare_baseline.png?dl=0)
+
+Proposed model (FLARe):
+![proposed](https://www.dropbox.com/s/gglrxqgra1n08s4/flare_proposed.png?dl=0)
+
+## Results
+To analyze our proposed model’s change in performance across different levels of dataavailability and forecasting horizons, we partition the testing set into buckets where eachbucket corresponds to an ordered pair(T, τ): the number of points used for prediction andthe forecasting horizon. In the following table, we provide the F1 score of RNN-Concat and FLARe for each bucket.  
+![results](https://www.dropbox.com/s/p63j09hey8yaw8i/results.png?dl=0)
 
 ### Data
 We used data from the [TADPOLE challenge](https://tadpole.grand-challenge.org/Data/#Data). Specifically, we used the **TADPOLE_D1_D2.csv** file. Download 
