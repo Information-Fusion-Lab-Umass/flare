@@ -1,5 +1,5 @@
 # FLARe: Forecasting by Learning Anticipated Representations
-<center> *Surya Teja Devarakonda*, *Yeahuay Joie Wu*, Madalina Fiterau </center>
+<center> Surya Teja Devarakonda*, Yeahuay Joie Wu*, Madalina Fiterau </center>
 <center><italics>University of Massachusetts, Amherst</italics></center>
 
 #### Machine Learning for Healthcare Conference (MLHC) 2019
@@ -17,14 +17,17 @@ On the other hand, in our baseline model, which we constructed taking ideas from
 3. **Classification**: Finally, we feed the output of the feature prediction module to a MLP classifier, which performs a 3-class classification between the classes Cognitively Normal (CN), Mildly Cognitively Impaired (MCI), and Alzheimer’s Disease (AD).
 
 Baseline model (RNN-Concat):  
-![baseline](https://www.dropbox.com/s/noc0v68v6g48ti0/flare_baseline.png?dl=0)
+
+![](https://www.dropbox.com/s/noc0v68v6g48ti0/flare_baseline.png?raw=true)
 
 Proposed model (FLARe):
-![proposed](https://www.dropbox.com/s/gglrxqgra1n08s4/flare_proposed.png?dl=0)
+
+![proposed](https://www.dropbox.com/s/gglrxqgra1n08s4/flare_proposed.png?raw=true)
 
 ## Results
-To analyze our proposed model’s change in performance across different levels of dataavailability and forecasting horizons, we partition the testing set into buckets where eachbucket corresponds to an ordered pair(T, τ): the number of points used for prediction andthe forecasting horizon. In the following table, we provide the F1 score of RNN-Concat and FLARe for each bucket.  
-![results](https://www.dropbox.com/s/p63j09hey8yaw8i/results.png?dl=0)
+To analyze our proposed model’s change in performance across different levels of dataavailability and forecasting horizons, we partition the testing set into buckets where eachbucket corresponds to an ordered pair(T, τ): the number of points used for prediction andthe forecasting horizon. In the following table, we provide the F1 score of RNN-Concat and FLARe for each bucket. 
+ 
+![](https://www.dropbox.com/s/p63j09hey8yaw8i/results.png?raw=true)
 
 ### Data
 We used data from the [TADPOLE challenge](https://tadpole.grand-challenge.org/Data/#Data). Specifically, we used the **TADPOLE_D1_D2.csv** file. Download 
