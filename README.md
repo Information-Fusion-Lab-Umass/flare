@@ -1,6 +1,7 @@
 # FLARe: Forecasting by Learning Anticipated Representations
-<center> Surya Teja Devarakonda*, Yeahuay Joie Wu*, Madalina Fiterau </center>
-<center><italics>University of Massachusetts, Amherst</italics></center>
+<center> Surya Teja Devarakonda*, Yeahuay Joie Wu*, Yi Ren Fung, Madalina Fiterau </center>
+<center><italics>University of Massachusetts, Amherst</italics></center>  
+
 *Authors Contributed Equally
 
 #### Machine Learning for Healthcare Conference (MLHC) 2019
