@@ -1,15 +1,41 @@
 ## FLARe : Feature Learning using Anticipated Representations
 
-### Introduction
-FLARe is a novel approach for disease trajectory forecasting using multimodal 
-longitudinal data. Our academic paper which describes FLARe in detail and 
-provides comprehensive results can be found here : **ADD PATH TO THE ARXIV PAPER HERE.** 
+<center>Surya Teja Devarakonda*, Joie Yeahuay Wu*, Yi Ren Fung, Madalina Fiterau</center>
 
+[Paper]
+
+<center><italics>University of Massachusetts, Amherst</italics></center>
+
+#### Machine Learning For Healthcare, MLHC 2019 
+
+### Abstract
+Computational models that forecast the progression of Alzheimer’s disease at the patient
+level are extremely useful tools for identifying high risk cohorts for early intervention and
+treatment planning. The state-of-the-art work in this area proposes models that forecast
+by using latent representations extracted from the longitudinal data across multiple modalities, including volumetric information extracted from medical scans and demographic info.
+These models incorporate the time horizon, which is the amount of time between the last
+recorded visit and the future visit, by directly concatenating a representation of it to the
+latent data representation. In this paper, we present a model which generates a sequence
+of latent representations of the patient status across the time horizon, providing more informative modeling of the temporal relationships between the patient’s history and future
+visits. Our proposed model outperforms the baseline in terms of forecasting accuracy and
+F1 score.
+
+<center>
+<img src="proposed.pdf" width="400" height="400" align="center"/>
+</center>
+
+### Results
+We report our results partitioned over all time horizons (tau) and number of data points used (T):
+
+<center>
+<img src="results.png" width="500" height="250" align="center"/>
+</center>
+
+## Documentation
 ### Data
-We used data from the [TADPOLE challenge](https://tadpole.grand-challenge.org/Data/#Data). Specifically, we used the **TADPOLE_D1_D2.csv** file. Download 
-that file and save it in the directory *data/*.  
+We used data from the [TADPOLE challenge](https://tadpole.grand-challenge.org/Data/#Data). Specifically, we used the **TADPOLE_D1_D2.csv** file. Download that file and save it in the directory *data/*. 
 
-### Setup
+### Instructions
 Python version used = 3.6.5 
 All library requirements are in **requirements.txt**  
 1. Create an environment with the correct version of python.  
