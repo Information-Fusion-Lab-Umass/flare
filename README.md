@@ -21,14 +21,14 @@ visits. Our proposed model outperforms the baseline in terms of forecasting accu
 F1 score.
 
 <center>
-<img src="proposed.pdf" width="400" height="400" align="center"/>
+<img src="proposed-1.png" width="400" height="400" align="center"/>
 </center>
 
 ### Results
 We report our results partitioned over all time horizons (tau) and number of data points used (T):
 
 <center>
-<img src="results.png" width="500" height="250" align="center"/>
+<img src="results.png" width="3650" height="1000" align="center"/>
 </center>
 
 ## Documentation
