@@ -1,4 +1,4 @@
-## FLARe : Feature Learning using Anticipated Representations
+# FLARe : Feature Learning using Anticipated Representations
 
 <center>Surya Teja Devarakonda*, Joie Yeahuay Wu*, Yi Ren Fung, Madalina Fiterau</center>
 
@@ -25,7 +25,7 @@ F1 score.
 </center>
 
 ### Results
-Results presented over maximum forecasting horizon for each level of data availability
+We present the F1-score over maximum forecasting horizon for each level of data availability:
 <center>
 <img src="results.png" width="600" height="400' align="center"/>
 </center>
