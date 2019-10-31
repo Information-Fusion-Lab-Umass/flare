@@ -25,8 +25,7 @@ F1 score.
 </center>
 
 ### Results
-We report our results partitioned over all time horizons (tau) and number of data points used (T):
-
+Results presented over maximum forecasting horizon for each level of data availability
 <center>
 <img src="results.png" width="600" height="400' align="center"/>
 </center>
