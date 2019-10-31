@@ -2,7 +2,7 @@
 
 <center>Surya Teja Devarakonda*, Joie Yeahuay Wu*, Yi Ren Fung, Madalina Fiterau</center>
 
-[Paper](https://static1.squarespace.com/static/59d5ac1780bd5ef9c396eda6/t/5d472e94d73cd5000124c6e6/1564946069614/Devarakonda.pdf)
+[[Paper]](https://static1.squarespace.com/static/59d5ac1780bd5ef9c396eda6/t/5d472e94d73cd5000124c6e6/1564946069614/Devarakonda.pdf)
 
 <center><italics>University of Massachusetts, Amherst</italics></center>
 
