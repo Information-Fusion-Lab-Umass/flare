@@ -18,7 +18,7 @@ import random
 
 class Model(nn.Module):
     def __init__(self, device, class_wt, module_image, module_temporal, \
-            module_forecast, module_task, fusion, aux_loss="MSE", aux_loss_scale=1.0):
+            module_forecast, module_task, module_concat, fusion, aux_loss="MSE", aux_loss_scale=1.0):
         super(Model, self).__init__()
         # Model names file
         with open('../src/models/models.yaml') as f:
@@ -58,6 +58,15 @@ class Model(nn.Module):
         model_task_name = module_task.pop('name')
         self.model_task = eval(model_dict[model_task_name])(**module_task)
         self.model_task = self.model_task.to(device)
+
+        if(module_concat['val']):
+            rnn_dict = {'num_input': 7,
+            'num_timesteps': 5}
+            self.model_concat = eval(model_dict['rnn'])(device,**rnn_dict)
+            self.model_concat = self.model_concat.to(device)
+
+            model_concat_fcast_name = module_concat.pop('name')
+            self.model_concat_fcast = eval(model_dict[model_concat_fcast_name])(device)
 
         self.class_wt = torch.tensor(class_wt).float().to(device)
         
@@ -121,7 +130,15 @@ class Model(nn.Module):
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
         if self.model_temporal_name == 'forecastRNN' or self.model_temporal_name == 'forecastRNN_covtest':
-            x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
+            # Make it concat for T=1
+            if x_feat.shape[1] == 2:
+                x_forecast = self.model_forecast(x_feat[:, :-1, :], x_time_data)
+                #y_pred = self.model_task(x_forecast)
+                y_pred = x_forecast
+                lossval = torch.tensor(0.).to(self.device)        
+                return y_pred, lossval
+            else:
+                x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
 
         else:
             x_temp = self.model_temporal(x_feat[:, :-1, :])
@@ -230,7 +247,7 @@ class Engine:
 
                     if self.model.model_temporal_name == 'forecastRNN' and not T_subset:
                         if idx == 0:
-                            obj = clfloss + auxloss*(1+self.aux_loss_scale)
+                            obj = clfloss + auxloss #*(1+self.aux_loss_scale)
                         else:
                             obj = clfloss + auxloss
                     else:
@@ -334,44 +351,6 @@ class Engine:
                     y_pred = torch.cat((y_pred, y_pred_batch), 0)
                     y = torch.cat((y, y_batch), 0)
                     tau = torch.cat((tau, x_batch['tau']), 0)
-            tau = tau.cpu().data.numpy()
-            for t in range(numT - idx):
-                loc = np.where(tau == t + 1)
-                cnf_matrix.update(idx, t, y_pred[loc].cpu(), y[loc].cpu())
-
-        cnf_matrix.save(exp_dir, filename)
-        return cnf_matrix
-
-    def test_MCDropout(self, datagen_test, exp_dir, filename, num_repeat):
-        self.model.eval()
-
-        for m in self.model.modules():
-            if m.__class__.__name__.startswith('Dropout'):
-                m.train()
-
-        numT = len(datagen_test)
-        cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
-
-        for idx, datagen in enumerate(datagen_test):
-            for step, (x_batch, y_batch) in enumerate(datagen):
-                y_pred_batch_agg = []
-                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
-                y_batch = y_batch.to(self.device)
-                for i in range(num_repeat):
-                    y_pred_batch, _ = self.model(x_batch)
-                    y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
-                    y_pred_batch_agg.append(y_pred_batch)
-                y_batch_avg = np.mean(y_pred_batch_agg, axis=0)
-                y_batch_std = np.std(y_pred_batch_agg, axis=0)
-                #  print(idx)
-                #  print(y_pred_batch)
-                if step == 0:
-                    y_pred, y, tau = y_batch_avg, y_batch, x_batch['tau']
-                else:
-                    y_pred = torch.cat((y_pred, y_batch_avg), 0)
-                    y = torch.cat((y, y_batch), 0)
-                    tau = torch.cat((tau, x_batch['tau']), 0)
-
             tau = tau.cpu().data.numpy()
             for t in range(numT - idx):
                 loc = np.where(tau == t + 1)

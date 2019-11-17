@@ -21,9 +21,7 @@ def main(config_file):
 
     main_exp_dir = os.path.join(config['output_dir'], config['exp_id'])
 
-
     utils.create_dirs([config['output_dir'], main_exp_dir, os.path.join(main_exp_dir, 'results'), os.path.join(main_exp_dir, 'logs')])
-
 
     max_T = config['datagen']['max_T'] # Load data and get image paths
     num_classes = config['model']['module_task']['num_classes'] 

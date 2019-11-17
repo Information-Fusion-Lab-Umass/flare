@@ -180,6 +180,9 @@ class forecastRNN_covtest(nn.Module):
         (bsize, T, nfeat) = x.shape
         # Forward pass through the RNN
         h = self.rnn(x)[0]
+        #if(T == 1):
+        #    return h
+
         # Forward pass through the feature prediction model
         h = h.contiguous().view(bsize*T, nfeat)
         y = self.autoenc(h).view(bsize, T, nfeat)
@@ -240,19 +243,3 @@ class LSTM(nn.Module):
         x = self.lstm(x)[0]
         return x[:, -1, :]
 
-class RNN_ct(nn.Module):
-    def __init__(self, device, num_input, num_timesteps):
-        super(RNN_ct, self).__init__()
-        self.T = 1 if num_timesteps==0 else num_timesteps
-        self.rnn = nn.RNN(input_size = num_input,
-                hidden_size = num_input, 
-                num_layers = 2,
-                batch_first=True,
-                dropout=0.2, 
-                bidirectional=False)
-        
-    def forward(self, x): 
-        if self.T==1:
-            return x[:, 0, :] 
-        x = self.rnn(x)[0]
-        return x[:, -1, :]

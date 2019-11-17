@@ -23,6 +23,10 @@ forecastRNN_covtest: models.forecastRNN_covtest
 # Forecasting models     
 append_time: models.AppendTime
 multiply_time: models.MultiplyTime
+append_zeros: models.AppendZeros
+expand: models.Expand
+t1: models.T1
+shrink: models.Shrink
 
 # Task specific models
 dx: models.ANN_DX

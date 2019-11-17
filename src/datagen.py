@@ -71,7 +71,7 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     datagen_train = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_train, T, max_T)
-        dataloader = data.DataLoader(dataset, batch_size=128, shuffle = True)
+        dataloader = data.DataLoader(dataset, batch_size=128, shuffle = True, drop_last=True)
         datagen_train.append(dataloader)
         data_train_size += len(dataset)
 
@@ -79,7 +79,7 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     datagen_val = []
     for T in range(2, max_visits + 1):
         dataset = Dataset(data_val, T, max_T)
-        dataloader = data.DataLoader(dataset, batch_size=128, shuffle = True) 
+        dataloader = data.DataLoader(dataset, batch_size=128, shuffle = True, drop_last=True) 
         datagen_val.append(dataloader)
 
     return datagen_train, datagen_val, data_train_size
