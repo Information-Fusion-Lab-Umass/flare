@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 
+def layer(x, fc, dp, bn):
+    return dp(F.relu(bn(fc(x))))
+
 class Tadpole(nn.Module):
     def __init__(self, num_input, num_output):
         super(Tadpole, self).__init__()
