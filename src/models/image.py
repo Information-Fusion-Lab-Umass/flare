@@ -53,3 +53,19 @@ class Tadpole_No_BN(nn.Module):
         x = self.dp4((F.relu(self.aff4(x))))
         return x
 
+class CovTest1(nn.Module):
+    '''
+    For the covariates and test scores only
+    '''
+    def __init__(self, num_input, num_output):
+        super(CovTest1, self).__init__()
+        self.aff1 = nn.Linear(num_input, num_input)
+        self.bn1 = nn.BatchNorm1d(num_input)
+        self.dp1 = nn.Dropout(0.5)
+        self.aff2 = nn.Linear(num_input, num_output)
+
+    def forward(self, x):
+        x = x.squeeze()
+        x = layer(x, self.aff1, self.dp1, self.bn1)
+        x = self.aff2(x)
+        return x
