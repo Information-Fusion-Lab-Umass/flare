@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-import ipdb
+#import ipdb
 
 def preprocess_adni(input_path, output_path, pid_train):
     data = pd.read_csv(input_path, dtype = object)
@@ -14,7 +14,8 @@ def preprocess_adni(input_path, output_path, pid_train):
             'm12': 2,
             'm18': 3,
             'm24': 4,
-            'm36': 5
+            'm36': 5,
+            'm48': 6
             }
 #    visit_codes = ['bl', 'm06', 'm12', 'm18', 'm24', 'm30', 'm36', \
 #            'm42', 'm48', 'm54', 'm60', 'm66', 'm72', 'm78', 'm84', 'm90', \
@@ -68,11 +69,46 @@ def preprocess_adni(input_path, output_path, pid_train):
     # Save processed Dataframe to output_path
     data.to_csv(output_path)
 
+def preprocess_imfeat(input_path,output_path,list_path):
+    '''
+    Routine to preprocess csv file for flare with
+    image features experiment. Input should be a 
+    cleaned/preprocessed ADNIMERGE file
+
+    Input:
+    input_path (string): path to the input csv
+    output_path (string): path to the output csv
+
+    id_vis_list (list): list of PTIDs and their 
+    corresponding viscodes to take from the csv
+    '''
+    
+    data = pd.read_csv(input_path, dtype=object) 
+    id_vis_list = np.load(list_path)
+    l = []
+    for (ptid,viscode) in id_vis_list:
+       ptid_c = ptid[:3]+'_'+ ptid[3] + '_' + ptid[4:]
+       if viscode == 'm00':
+            viscode_c = 'bl'
+       else:
+            viscode_c = viscode
+       check = data[(data['PTID'] == ptid_c) & (data['VISCODE'] == str(viscode_c))]
+       feat_path = '/mnt/nfs/work1/mfiterau/yeahuaywu/ad_clf/feature_outputs'
+       check.insert(loc=len(check.columns),column='img_feat_path',value=feat_path+'/'+ptid+'/'+viscode+'/'+'features.pt')
+       if not check.empty:
+            l.append(check)
+       else:
+            print(viscode)
+    imfeat_data = pd.concat(l)
+    imfeat_data.to_csv(output_path,index=False)
+
 if __name__ == '__main__':
     input_path = '../data/TADPOLE_D1_D2.csv'
-    output_path = '../data/TADPOLE_D1_D2_proc_norm_test.csv'
+    output_path = '../data/TADPOLE_D1_D2_m48.csv'
     pid_train = '../data/patientID_train_all.txt'
-    preprocess_adni(input_path, output_path, pid_train)
+    list_path = '../data/ptid_viscode_list.npy'
+#    preprocess_adni(input_path, output_path, pid_train)
+    preprocess_imfeat(output_path,'../data/TADPOLE_images_only.csv',list_path)
 
 """
 bl      1737

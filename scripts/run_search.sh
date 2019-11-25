@@ -8,6 +8,6 @@
 #SBATCH --gres=gpu:4
 #SBATCH --time=4-00:00:00          # HH:MM:SS
 
-python3 main_randomized_search.py --config=../configs/flare_skorch.yaml --debug=0 --numT=2 --n_iter=50 --exp_id=T2_100_no_epochs
+python3 main_randomized_search.py --config=../configs/flare_skorch.yaml  --numT=2 --n_iter=50 --exp_id=skorch_debugs
 sleep 1
 exit

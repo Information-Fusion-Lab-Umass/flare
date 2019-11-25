@@ -2,8 +2,8 @@ output_dir: &output ../outputs/skorch-debug
 
 #Data
 data:
-    path_load: ../data/data_norm_test.pickle
-    path: ../data/TADPOLE_D1_D2_proc_norm_test.csv
+    path_load: ../data/data_norm_images_only.pickle
+    path: ../data/TADPOLE_images_only.csv
     train_ids_path: ../data/patientID_train.txt
     test_ids_path: ../data/patientID_test.txt
     min_visits: 2

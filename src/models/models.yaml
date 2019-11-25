@@ -1,6 +1,7 @@
 # Image models
 tadpole: models.Tadpole
 tadpole_no_bn: models.Tadpole_No_BN    
+3d_cnn: models.DeepAutoencMRIImFeat
 
 # Multimodal models    
 multimodal: models.TadpoleFeat

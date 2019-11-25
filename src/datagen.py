@@ -16,7 +16,9 @@ def get_data(path, train_ids_path, test_ids_path,
     data = {}
     for pid in tqdm(id_list):
         data_pid = data_feat[data_feat.PTID==pid]
-        data_pid = patient.Patient(pid, data_pid, only_consecutive)
+        if data_pid.empty:
+            continue
+        data_pid = patient.Patient(pid, data_pid, only_consecutive,cnn=True)
         if data_pid.num_visits >= min_visits:
             data[pid] = data_pid
         sys.stdout.flush()
@@ -55,8 +57,9 @@ def get_datagen(src_data, batch_size, max_visits, max_T, dataload_method):
     datasets_all = []
     datagen_all = []
 
-    for T in range(2, max_visits + 1):
+    for T in range(2, max_visits+1):
         dataset = Dataset(src_data, T, max_T)
+        print(dataset.__len__())
         datasets_all.append(dataset)
         dataloader = data.DataLoader(dataset, batch_size, shuffle = True) 
         datagen_all.append(dataloader)
@@ -132,6 +135,7 @@ class Dataset(data.Dataset):
             x = {}
             x['tau'] = trajectory.tau
             x['img_features'] = self.get_data(trajectory, 'img_features')
+
             x['covariates'] = self.get_data(trajectory, 'covariates')
             x['test_scores'] = self.get_data(trajectory, 'test_scores')
             x['labels'] = self.get_data(trajectory, 'labels')

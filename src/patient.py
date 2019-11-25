@@ -1,6 +1,7 @@
 import pickle
 import pandas as pd
 import numpy as np
+import torch
 from itertools import combinations as comb
 
 from src import utils
@@ -24,7 +25,7 @@ class Patient:
     -------
     None
     """
-    def __init__(self, pid, df, only_consecutive = True):
+    def __init__(self, pid, df, only_consecutive = True, cnn=False):
         self.patient_id = pid
         self.flag_ad = False
         self.first_occurance_ad = -1
@@ -38,7 +39,7 @@ class Patient:
         for idx, row in df.iterrows():
             visit_id = int(row['VISNUM'])
             self.visits_id.append(visit_id)
-            self.visits[visit_id] = Visit(row)
+            self.visits[visit_id] = Visit(row,cnn)
 
         # Check if the patient develops AD
         for visit_id in self.visits_id:
@@ -48,13 +49,13 @@ class Patient:
                 break
 
         self.num_visits = len(self.visits_id)
-        self.visits_id = sorted(self.visits_id)
+        self.visits_id = sorted(set(self.visits_id))
         patient_info = {
                 'pid' : self.patient_id,
                 'flag_ad' : self.flag_ad,
                 'first_occurance_ad' : self.first_occurance_ad
                 }
-
+         
         # Obtain trajectory data 
         for i in range(2, self.num_visits + 1):
             self.trajectories_id[i] = list(comb(self.visits_id, i))
@@ -64,11 +65,7 @@ class Patient:
             self.trajectories[i] = [
                     Trajectory(
                         [self.visits[tt] for tt in t], 
-                        self.visits[t[-1]+1] if t[-1]+1 in self.visits else None,
-                        t, patient_info
-                        ) 
-                    for t in self.trajectories_id[i]
-                    ]
+                        self.visits[t[-1]+1] if t[-1]+1 in self.visits else None, t, patient_info) for t in self.trajectories_id[i]]
         
 class Trajectory:
     '''
@@ -81,6 +78,7 @@ class Trajectory:
         self.visits = {}
         for visit in visits:
             self.visits[visit.visit_id] = visit
+         
         self.length = len(self.visits)
 
         # calculate tau and T values for the trajectory
@@ -105,7 +103,7 @@ class Visit:
     df (DataFrame): Row of main dataframe corresponding to one patient's
     visit.
     '''
-    def __init__(self, df):
+    def __init__(self, df, cnn):
         self.visit_code = df['VISCODE']
         self.visit_id = int(df['VISNUM'])
 
@@ -113,7 +111,7 @@ class Visit:
         self.data['covariates'] = self.get_covariates(df)
         self.data['labels'] = self.get_labels(df)
         self.data['test_scores'] = self.get_cogtest(df)
-        self.data['img_features'] = self.get_img_features(df)
+        self.data['img_features'] = self.get_img_features(df,cnn)
         #  self.data['image_path'] = df['misc']
 
     def get_cogtest(self, df):
@@ -125,15 +123,18 @@ class Visit:
                 ])
     
     # Extract image features. len = 692. 
-    def get_img_features(self, df):
+    def get_img_features(self, df, cnn=False):
         img_df = []
-        for name in list(df.index):
-            if('UCSFFSX' in name or 'UCSFFSL' in name):
-                if(name.startswith('ST') and 'STATUS' not in name):
-                    if df[name] != ' ':
-                        img_df.append(float(df[name]))
-                    else:
-                        img_df.append(0.0)
+        if(not cnn):
+            for name in list(df.index):
+                if('UCSFFSX' in name or 'UCSFFSL' in name):
+                    if(name.startswith('ST') and 'STATUS' not in name):
+                        if df[name] != ' ':
+                            img_df.append(float(df[name]))
+                        else:
+                            img_df.append(0.0)
+        else:
+            img_df = torch.load(df['img_feat_path'])
         return img_df
 
     def get_labels(self, df):
