@@ -18,8 +18,8 @@ class Tadpole(nn.Module):
         self.bn3 = nn.BatchNorm1d(num_output) 
         self.dp3 = nn.Dropout(p=0.2)
 
-        self.aff4 = nn.Linear(num_output, 500)
-        self.bn4 = nn.BatchNorm1d(500)       
+        self.aff4 = nn.Linear(num_output, 20)
+        self.bn4 = nn.BatchNorm1d(20)       
         self.dp4 = nn.Dropout(p=0.2)
 
     def forward(self, x):
