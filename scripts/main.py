@@ -18,7 +18,7 @@ def main(config_file):
     with open(config_file) as f:
         config = yaml.load(f)
     
-    config['train'].pop('num_iter')
+    # config['train'].pop('num_iter')
     # Create experiment output directories
     exp_dir = os.path.join(config['output_dir'], config['exp_id'])
     utils.create_dirs([config['output_dir'], exp_dir,
@@ -45,8 +45,7 @@ def main(config_file):
 
     # Datagens
     t = time()
-    datagen_train, datagen_val = \
-            datagen.get_datagen(data, **config['datagen'])
+    datagen_train, datagen_val = datagen.get_datagen(data, **config['datagen'])
     print('Datagens Loaded : ', time()-t)
     class_wt = utils.get_classWeights(data, config['data']['train_ids_path'])
     print(class_wt)

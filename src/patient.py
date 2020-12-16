@@ -2,8 +2,13 @@ import pickle
 import pandas as pd
 import numpy as np
 from itertools import combinations as comb
+import torch
 
 from src import utils
+
+class MissingVisitException(Exception):
+    pass
+
 
 class Patient:
     """
@@ -38,7 +43,12 @@ class Patient:
         for idx, row in df.iterrows():
             visit_id = int(row['VISNUM'])
             self.visits_id.append(visit_id)
-            self.visits[visit_id] = Visit(row)
+
+            try:
+                self.visits[visit_id] = Visit(row)
+            except MissingVisitException:
+                print("missing img: {}, {}".format(pid, row["VISCODE"]))
+                self.visits_id.remove(visit_id)
 
         # Check if the patient develops AD
         for visit_id in self.visits_id:
@@ -110,10 +120,15 @@ class Visit:
         self.visit_id = int(df['VISNUM'])
 
         self.data = {}
+
         self.data['covariates'] = self.get_covariates(df)
         self.data['labels'] = self.get_labels(df)
         self.data['test_scores'] = self.get_cogtest(df)
         self.data['img_features'] = self.get_img_features(df)
+        self.data['liu_features'] = self.get_liufeatures(df)
+
+        if self.data['liu_features'] is None:
+            raise MissingVisitException
         #  self.data['image_path'] = df['misc']
 
     def get_cogtest(self, df):
@@ -166,5 +181,29 @@ class Visit:
                 #  df['PTMARRY'].values[0],
                 float(df['APOE4'])
                 ]
+
+    def get_liufeatures(self, df):
+        ptid = df['PTID']
+        viscode = df['VISCODE']
+
+        ptid = ptid.replace('_', '')
+        if viscode == 'bl':
+            viscode = 'm00'
+
+        try:
+            torch_feats = torch.load(
+                '/mnt/nfs/work1/mfiterau/ADNI_IMG/liunet_features/{}/{}/features.pt'.format(ptid, viscode))
+        except FileNotFoundError:
+            torch_feats = None
+
+        if torch_feats is not None:
+            return torch_feats.cpu().data.numpy()
+        else:
+            return np.zeros(1024)
+
+
+
+
+
 
 

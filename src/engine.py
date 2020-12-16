@@ -8,7 +8,7 @@ import torch.nn as nn
 import yaml
 #import ipdb
 import pickle
-from src import models, utils, evaluate, unittest
+from src import models, utils, evaluate, unittest_f
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -72,11 +72,14 @@ class Model(nn.Module):
         
     def loss(self, y_pred, y):
         y = y.long().to(self.device)
-        return nn.CrossEntropyLoss(weight = self.class_wt)(y_pred, y)
+        return nn.CrossEntropyLoss(weight=self.class_wt)(y_pred, y)
  
     def forward(self, data_batch, on_gpu=False):
         # Extract data components
+        # x_liu_data = data_batch['liu_features']
         x_img_data = data_batch['img_features']
+        # x_img_data = data_batch['liu_features']
+        # x_img_data = torch.cat((data_batch['liu_features'], data_batch['img_features']), dim=2)
         x_cov_data = data_batch['covariates']
         x_long_data = data_batch['test_scores']
         x_time_data = data_batch['tau']
@@ -86,6 +89,9 @@ class Model(nn.Module):
         # STEP 3: MODULE 1: FEATURE EXTRACTION -----------------------------
         # Get image features :  x_img_feat = (B, T-1, Fi) 
         x_img_data = x_img_data.view((B*(T), 1) + x_img_data.shape[2:])
+
+        # print(x_img_data.shape)
+
         if len(x_img_data.shape) == 5:
             x_img_data = x_img_data.permute(0,1,4,2,3)
         if self.fusion == 'concat_feature':
@@ -127,29 +133,44 @@ class Model(nn.Module):
         elif self.fusion == 'concat_input':
             x_feat = x_img_feat
 
+        # # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
+        # # X_temp: (B, F_t)
+        # if self.model_temporal_name == 'forecastRNN' or self.model_temporal_name == 'forecastRNN_covtest':
+        #     # Make it concat for T=1
+        #     if x_feat.shape[1] == 2:
+        #         x_forecast = self.model_forecast(x_feat[:, :-1, :], x_time_data)
+        #         y_pred = self.model_task(x_forecast)
+        #         # y_pred = x_forecast
+        #         lossval = torch.tensor(0.).to(self.device)
+        #         return y_pred, lossval
+        #     else:
+        #         x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
+        #
+        # else:
+        #     x_temp = self.model_temporal(x_feat[:, :-1, :])
+        #
+        #     # STEP 6: MODULE 3: FORECASTING ------------------------------------
+        #     # x_forecast: (B, F_f)
+        #     x_forecast = self.model_forecast(x_temp, x_time_data)
+        #     lossval = torch.tensor(0.).to(self.device)
+
         # STEP 5: MODULE 2: TEMPORAL FUSION --------------------------------
         # X_temp: (B, F_t)
-        if self.model_temporal_name == 'forecastRNN' or self.model_temporal_name == 'forecastRNN_covtest':
-            # Make it concat for T=1
-            if x_feat.shape[1] == 2:
-                x_forecast = self.model_forecast(x_feat[:, :-1, :], x_time_data)
-                #y_pred = self.model_task(x_forecast)
-                y_pred = x_forecast
-                lossval = torch.tensor(0.).to(self.device)        
-                return y_pred, lossval
-            else:
-                x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
-
+        if self.model_temporal_name in ['forecastRNN', 'forecastRNN_covtest']:
+            x_forecast, lossval, x_cache = self.model_temporal(x_feat, x_time_data)
         else:
+            # get [h_v1, h_v2, ...]
             x_temp = self.model_temporal(x_feat[:, :-1, :])
-      
+
             # STEP 6: MODULE 3: FORECASTING ------------------------------------
             # x_forecast: (B, F_f)
+            # get [\hat f_v2, \hat f_v3, ...]
             x_forecast = self.model_forecast(x_temp, x_time_data)
-            lossval = torch.tensor(0.).to(self.device)        
- 
+            lossval = torch.tensor(0.).to(self.device)
         # STEP 7: MODULE 4: TASK SPECIFIC LAYERS ---------------------------
         # DX Classification Module
+
+        # get predicted labels for each \hat f_vi
         ypred = self.model_task(x_forecast)
         
         # STEP 8: Compute Auxiliary Loss
@@ -204,15 +225,15 @@ class Engine:
         self.optm = torch.optim.Adam(sum(list(self.model_params.values()), []), lr = self.lr, weight_decay=self.weight_decay)
 
     def train(self, datagen_train, datagen_val, \
-            exp_dir, dataload_method, data_train_size, batch_size, num_epochs, \
-            log_period=100, ckpt_period=100, \
-            validation_period = 100, save_model=False):
-        
+              exp_dir, dataload_method, data_train_size, batch_size, num_epochs, \
+              log_period=100, ckpt_period=100, \
+              validation_period=100, save_model=False):
+
         loss_vals = evaluate.LossVals(
-                num_epochs,
-                validation_period,
-                len(datagen_train)
-                )
+            num_epochs,
+            validation_period,
+            len(datagen_train)
+        )
         # Set min for early stopping condition
         min_loss = np.inf
 
@@ -225,34 +246,36 @@ class Engine:
             for key in self.model_params:
                 p = self.model_params[key]
                 params[key] = [p[i].clone() for i in range(len(p))]
-            
+
             # Iterate over datagens for T = [2, 3, 4, 5, 6]
-            lossval = 0.0; count = 0
-            
-            #Check if running T subset exp 
+            lossval = 0.0;
+            count = 0
+
+            # Check if running T subset exp
             T_subset = (len(datagen_train) == 1)
-            
+
             for idx, datagen in enumerate(datagen_train):
-                #if epoch < 20 and idx < 1:
+                # if epoch < 20 and idx < 1:
                 #    continue
                 print("datagen idx: " + str(idx))
                 t = time()
-                clfLoss_T = 0.0; auxLoss_T = 0.0
-                for step, (x,y) in enumerate(datagen):
+                clfLoss_T = 0.0;
+                auxLoss_T = 0.0
+                for step, (x, y) in enumerate(datagen):
                     self.optm.zero_grad()
-                    x = {k : v.to(self.device) for k, v in x.items()}
+                    x = {k: v.to(self.device) for k, v in x.items()}
                     y = y.to(self.device)
                     y_pred, auxloss = self.model(x)
                     clfloss = self.model.loss(y_pred, y)
 
                     if self.model.model_temporal_name == 'forecastRNN' and not T_subset:
                         if idx == 0:
-                            obj = clfloss + auxloss #*(1+self.aux_loss_scale)
+                            obj = clfloss + auxloss  # *(1+self.aux_loss_scale)
                         else:
                             obj = clfloss + auxloss
                     else:
                         obj = clfloss + auxloss
-                    
+
                     # Train the model
                     obj.backward()
                     self.optm.step()
@@ -261,30 +284,31 @@ class Engine:
                     auxLoss_T += float(auxloss)
 
                     sys.stdout.flush()
-                    
+
                 if epoch == 0:
-                    print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
-                           format(epoch, idx, step, time() - t))
-                
+                    print('Epoch = {}, datagen = {}, steps = {}, time = {}'. \
+                          format(epoch, idx, step, time() - t))
+
                 loss_vals.update_T('train', [clfLoss_T, auxLoss_T], epoch, idx, step + 1)
                 print('auxLoss_T: ', auxLoss_T)
-   
+
             loss_vals.update('train', epoch)
 
             # Unittest
-            unittest.change_in_params(params, self.model_params)
- 
+            unittest_f.change_in_params(params, self.model_params)
+
             # VALIDATION ------------------------------------
             print('Validation')
-            if(epoch % validation_period == 0 or epoch == num_epochs - 1):
+            if (epoch % validation_period == 0 or epoch == num_epochs - 1):
                 self.model.eval()
-                
-                for idx, datagen in enumerate(datagen_val):   
+
+                for idx, datagen in enumerate(datagen_val):
                     t = time()
-                    clfLoss_T = 0.0 ; auxLoss_T = 0.0
+                    clfLoss_T = 0.0;
+                    auxLoss_T = 0.0
                     for step, (x, y) in enumerate(datagen):
                         # Feed Forward
-                        x = {k : v.to(self.device) for k, v in x.items()}
+                        x = {k: v.to(self.device) for k, v in x.items()}
                         y = y.to(self.device)
                         y_pred, auxloss = self.model(x)
                         clfloss = self.model.loss(y_pred, y)
@@ -296,29 +320,29 @@ class Engine:
                         sys.stdout.flush()
 
                     if epoch == 0:
-                        print('Epoch = {}, datagen = {}, steps = {}, time = {}'.\
-                                format(epoch, idx, step, time() - t))
+                        print('Epoch = {}, datagen = {}, steps = {}, time = {}'. \
+                              format(epoch, idx, step, time() - t))
 
                     # Store the Loss
                     loss_vals.update_T('val', [clfLoss_T, auxLoss_T], \
-                        int(epoch/validation_period), idx, step + 1)  
+                                       int(epoch / validation_period), idx, step + 1)
 
-                loss_vals.update('val', int(epoch/validation_period))
+                loss_vals.update('val', int(epoch / validation_period))
 
                 if loss_vals.val_loss['totalLoss'][epoch] < min_loss:
                     # SAVING THE MODEL -----------------------------
                     min_loss = loss_vals.val_loss['totalLoss'][epoch]
-                    if(save_model):
-                        if(epoch % ckpt_period == 0 or epoch == num_epochs - 1):
-                            print('Checkpoint : Saving model at Epoch : {}'.\
-                                    format(epoch+1))
+                    if (save_model):
+                        if (epoch % ckpt_period == 0 or epoch == num_epochs - 1):
+                            print('Checkpoint : Saving model at Epoch : {}'. \
+                                  format(epoch + 1))
                             torch.save(self.model.state_dict(), exp_dir + \
-                                    '/checkpoints/model_ep_min' + '.pth')
+                                       '/checkpoints/model_ep_min' + '.pth')
 
             # LOGGING --------------------------------------
             if epoch % log_period == 0:
                 print('Epoch : {}, Train Loss = {}'. \
-                        format(epoch + 1, loss_vals.train_loss['totalLoss'][epoch]))
+                      format(epoch + 1, loss_vals.train_loss['totalLoss'][epoch]))
 
             sys.stdout.flush()
 
@@ -327,23 +351,24 @@ class Engine:
             pickle.dump(loss_vals, f)
 
         loss_vals.plot_graphs(os.path.join(exp_dir, 'logs'), \
-                num_graphs = len(datagen_train))
+                              num_graphs=len(datagen_train))
 
     def test(self, datagen_test, exp_dir, filename):
-        if self.early_stopping: 
-            load_model = exp_dir+'/checkpoints/model_ep_min.pth'
-            self.model.load_state_dict(torch.load(load_model, map_location = self.device))
+        if self.early_stopping:
+            load_model = exp_dir + '/checkpoints/model_ep_min.pth'
+            self.model.load_state_dict(torch.load(load_model))
+            self.model.to(self.device)
         self.model.eval()
         numT = len(datagen_test)
         cnf_matrix = evaluate.ConfMatrix(numT, self.num_classes)
-            
+
         for idx, datagen in enumerate(datagen_test):
             for step, (x_batch, y_batch) in enumerate(datagen):
-                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
+                x_batch = {k: v.to(self.device) for k, v in x_batch.items()}
                 y_batch = y_batch.to(self.device)
                 y_pred_batch, auxloss = self.model(x_batch)
-                clfloss = self.model.loss(y_pred_batch,y_batch)
-                y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
+                clfloss = self.model.loss(y_pred_batch, y_batch)
+                y_pred_batch = nn.Softmax(dim=1)(y_pred_batch)
 
                 if step == 0:
                     y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
@@ -366,10 +391,10 @@ class Engine:
         for idx, datagen in enumerate(datagen_test):
             for step, (x_batch, y_batch) in enumerate(datagen):
 
-                x_batch = {k : v.to(self.device) for k, v in x_batch.items()}
+                x_batch = {k: v.to(self.device) for k, v in x_batch.items()}
                 y_batch = y_batch.to(self.device)
                 y_pred_batch, _ = self.model(x_batch)
-                y_pred_batch = nn.Softmax(dim = 1)(y_pred_batch)
+                y_pred_batch = nn.Softmax(dim=1)(y_pred_batch)
                 if step == 0:
                     y_pred, y, tau = y_pred_batch, y_batch, x_batch['tau']
                     pid = x_batch['pid']
@@ -378,9 +403,9 @@ class Engine:
                     y_pred = torch.cat((y_pred, y_pred_batch), 0)
                     y = torch.cat((y, y_batch), 0)
                     tau = torch.cat((tau, x_batch['tau']), 0)
-                    pid = torch.cat((pid,x_batch['pid']),0)
+                    pid = torch.cat((pid, x_batch['pid']), 0)
                     trajectory_id = torch.cat((trajectory_id, \
-                            x_batch['trajectory_id']),0)
+                                               x_batch['trajectory_id']), 0)
 
             dataT = {}
             dataT['y'] = y
@@ -390,5 +415,3 @@ class Engine:
             dataT['trajectory_id'] = trajectory_id
             data.append(dataT)
         return data
-
-

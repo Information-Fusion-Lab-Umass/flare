@@ -1,0 +1,51 @@
+data:
+  data_split: 0.8
+  min_visits: 2
+  only_consecutive: true
+  path: ../data/TADPOLE_D1_D2_proc_norm_test.csv
+  test_ids_path: ../data/patientID_test_liu.txt
+  train_ids_path: ../data/patientID_train_liu.txt
+datagen:
+  batch_size: 64
+  dataload_method: null
+  max_T: 5
+  max_visits: 5
+exp_id: flare-liu-2
+model:
+  aux_loss: MSE
+  aux_loss_scale: 10000
+  early_stopping: true
+  fusion: concat_feature
+  init:
+    linear_init: true
+    rnn_init: true
+  learning_rate: 0.0021
+  load_model: ''
+  module_concat:
+    name: null
+    val: false
+  module_forecast:
+    name: append_time
+  module_image:
+    name: tadpole
+    num_input: 1680
+    num_output: 1000
+  module_task:
+    name: dx
+    num_classes: 3
+    num_input: 520
+  module_temporal:
+    name: forecastRNN
+    num_input: 520
+    num_timesteps: 5
+  weight_decay: 0
+num_iter: 5
+output_dir: ../outputs/12.02.2020/flare
+test_model: true
+train:
+  ckpt_period: 1
+  log_period: 1
+  num_epochs: 30
+  save_model: true
+  validation_period: 1
+train_model: true

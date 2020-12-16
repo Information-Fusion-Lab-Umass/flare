@@ -20,7 +20,7 @@ def load_img(path, view='axial'):
 def create_dirs(paths):
     for path in paths:
         if os.path.exists(path)==False:
-            os.mkdir(path)
+            os.makedirs(path)
 
 def one_hot(labels, device, C = 5):
     N = len(labels)

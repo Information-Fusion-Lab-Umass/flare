@@ -113,6 +113,7 @@ class Dataset(data.Dataset):
         x['covariates'] = self.get_data(trajectory, 'covariates')
         x['test_scores'] = self.get_data(trajectory, 'test_scores')
         x['labels'] = self.get_data(trajectory, 'labels')
+        # x['liu_features'] = self.get_data(trajectory, 'liu_features')
 
 #        x['pid'] = int(trajectory.pid[:3] + trajectory.pid[6:])
 #        x['flag_ad'] = torch.tensor(trajectory.flag_ad)
@@ -138,6 +139,7 @@ class Dataset(data.Dataset):
             x['covariates'] = self.get_data(trajectory, 'covariates')
             x['test_scores'] = self.get_data(trajectory, 'test_scores')
             x['labels'] = self.get_data(trajectory, 'labels')
+            x['liu_features'] = self.get_data(trajectory, 'liu_features')
 
             y = self.get_data(trajectory, 'labels')[-1, 0]        
             

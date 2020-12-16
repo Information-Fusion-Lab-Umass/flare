@@ -1,0 +1,53 @@
+data:
+  data_split: 0.8
+  min_visits: 2
+  only_consecutive: true
+  path: ../data/TADPOLE_D1_D2_proc_norm_test.csv
+  test_ids_path: ../data/patientID_test_y.txt
+  train_ids_path: ../data/patientID_train_y.txt
+datagen:
+  batch_size: 128
+  dataload_method: None
+  max_T: 5
+  max_visits: 5
+exp_id: flare-cov-3
+model:
+  aux_loss: MSE
+  aux_loss_scale: 1000
+  early_stopping: false
+  fusion: concat_input
+  init:
+    linear_init: true
+    rnn_init: true
+  learning_rate: 0.001
+  load_model: ''
+  module_concat:
+    name: append_time
+    val: false
+  module_forecast:
+    name: t1
+    num_input: 7
+    num_timesteps: 5
+  module_image:
+    name: covtest
+    num_input: 7
+    num_output: 7
+  module_task:
+    name: dx2
+    num_classes: 3
+    num_input: 7
+  module_temporal:
+    name: forecastRNN_covtest
+    num_input: 7
+    num_timesteps: 5
+  weight_decay: 0.00333
+num_iter: 5
+output_dir: ../outputs/11.13.2020/flare
+test_model: true
+train:
+  ckpt_period: 1
+  log_period: 1
+  num_epochs: 60
+  save_model: false
+  validation_period: 1
+train_model: true
